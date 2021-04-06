@@ -42,6 +42,7 @@ void sensor_data_loop(void * pvParameters) {
       }
       data_output.flush();
     }
+    //ets_printf("sensor_data_loop() - never used stack size: %u\n", uxTaskGetStackHighWaterMark(NULL));
     delay(SENSOR_TIC_SEC*1000 - 2010);
   }
 }
@@ -65,7 +66,8 @@ void sensor_pir_data_loop(void * pvParameters) {
         data_output.flush();
       }
     }
-    delay(SENSOR_PIR_TIC_SEC);
+    //ets_printf("sensor_pir_data_loop() - never used stack size: %u\n", uxTaskGetStackHighWaterMark(NULL));
+    delay(SENSOR_PIR_TIC_SEC*1000);
   }
 }
 
@@ -75,6 +77,7 @@ void audio_loop(void * pvParameters) {
   while(true) {
     //delay(1000);
     collect_audio_data();
+    /*
     time_to_file(&data_audio_output);
     for (int i = 0; i < OCTAVES; i++) {
         //print_level(energy[i]);
@@ -94,7 +97,7 @@ void audio_loop(void * pvParameters) {
         sd_card = 0;
       }
       data_audio_output.flush();
-    }
+    }*/
     //print("\n");
     //!audio
   }
@@ -104,8 +107,11 @@ void setup() {
   //status info
   pinMode(statusLED, OUTPUT);
   digitalWrite(statusLED, HIGH);
+  delay(5000);
   
   Serial.begin(115200);
+  Serial.println();
+  Serial.println("#########################################################");
 
   //connect to WiFi
   Serial.printf("Connecting to %s ", ssid);
@@ -150,16 +156,16 @@ void setup() {
   xTaskCreatePinnedToCore(
         audio_loop, /* Function to implement the task */
         "audio_loop", /* Name of the task */
-        10000,  /* Stack size in words */
+        4096,  /* Stack size in words */
         NULL,  /* Task input parameter */
-        0,  /* Priority of the task */
+        1,  /* Priority of the task */
         &DataAudioTask,  /* Task handle. */
         0); /* Core where the task should run */
 
   xTaskCreatePinnedToCore(
         sensor_data_loop, /* Function to implement the task */
         "sensor_loop", /* Name of the task */
-        10000,  /* Stack size in words */
+        1900,  /* Stack size in words */
         NULL,  /* Task input parameter */
         0,  /* Priority of the task */
         &DataTask,  /* Task handle. */
@@ -168,9 +174,9 @@ void setup() {
   xTaskCreatePinnedToCore(
         sensor_pir_data_loop, /* Function to implement the task */
         "sensor_pir_loop", /* Name of the task */
-        10000,  /* Stack size in words */
+        1500,  /* Stack size in words */
         NULL,  /* Task input parameter */
-        1,  /* Priority of the task */ //higher priority than normal data
+        0,  /* Priority of the task */ 
         &DataPIRTask,  /* Task handle. */
         1); /* Core where the task should run */
 
