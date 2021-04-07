@@ -63,7 +63,7 @@ void sensor_pir_data_loop(void * pvParameters) {
         if(!write_n) {
           sd_card = 0;
         }
-        data_output.flush();
+        data_pir_output.flush();
       }
     }
     //ets_printf("sensor_pir_data_loop() - never used stack size: %u\n", uxTaskGetStackHighWaterMark(NULL));
