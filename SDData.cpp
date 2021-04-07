@@ -46,7 +46,7 @@ void start_sd() {
     tick_time_update();
     char main_data_file[32];
     char pir_data_file[32];
-    char audio_data_file[32];
+    //char audio_data_file[32];
     
     sprintf(main_data_file, "/%04d%02d%02d_%02d%02d%02d_main_data.csv", current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
     sprintf(pir_data_file, "/%04d%02d%02d_%02d%02d%02d_pir_data.csv", current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
@@ -87,6 +87,7 @@ void start_sd() {
 }
 
 void start_wav_file() {
+  tick_time_update();
   char audio_wav_data_file[32];
   sprintf(audio_wav_data_file, "/%04d%02d%02d_%02d%02d%02d_audio.wav", current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
   data_audio_wav_output = SD.open(audio_wav_data_file, FILE_WRITE);

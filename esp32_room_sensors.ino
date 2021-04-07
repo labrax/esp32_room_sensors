@@ -43,7 +43,7 @@ void sensor_data_loop(void * pvParameters) {
       data_output.flush();
     }
     //ets_printf("sensor_data_loop() - never used stack size: %u\n", uxTaskGetStackHighWaterMark(NULL));
-    delay(SENSOR_TIC_SEC*1000 - 2010);
+    vTaskDelay((SENSOR_TIC_SEC*1000 - 2010)/portTICK_PERIOD_MS);
   }
 }
 
@@ -67,7 +67,7 @@ void sensor_pir_data_loop(void * pvParameters) {
       }
     }
     //ets_printf("sensor_pir_data_loop() - never used stack size: %u\n", uxTaskGetStackHighWaterMark(NULL));
-    delay(SENSOR_PIR_TIC_SEC*1000);
+    vTaskDelay((SENSOR_PIR_TIC_SEC*1000) / portTICK_PERIOD_MS);
   }
 }
 
@@ -140,6 +140,7 @@ void setup() {
 
   start_sd();
   start_audio();
+  pinMode(AUDIO_DISABLE_PIN, INPUT);
 
   #ifdef WEBSERVER
   Serial.print("Got IP: ");  Serial.println(WiFi.localIP());

@@ -21,6 +21,7 @@
 //audio defines
 #include <FreeRTOS.h>
 #include <driver/i2s.h>
+#define AUDIO_DISABLE_PIN 13
 #define I2S_SCK 14 // ports
 #define I2S_WS 15
 #define I2S_SD 4
@@ -28,7 +29,7 @@
 #define I2S_SAMPLE_RATE (16000) //44100
 #define I2S_SAMPLE_BITS (16) //32
 #define I2S_CHANNEL_NUM (1) //only left
-#define RECORD_TIME (60)
+#define RECORD_TIME (120)
 #define HEADER_SIZE 44
 #define SAMPLES 1024
 #define I2S_READ_LEN (I2S_SAMPLE_BITS * SAMPLES)

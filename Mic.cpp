@@ -1,5 +1,7 @@
 #include "Mic.h"
 
+//based on: https://github.com/0015/ThatProject/blob/master/ESP32_MICROPHONE/ESP32_INMP441_RECORDING/ESP32_INMP441_RECORDING.ino
+
 int audio_start = 0;
 
 //int32_t samples[BLOCK_SIZE];
@@ -81,6 +83,16 @@ void i2s_adc(void *arg) {
   while(true) {
     if(sd_card == 0) {
       Serial.println("No SD card setup!");
+      delay(1000);
+    } else if(digitalRead(AUDIO_DISABLE_PIN) == HIGH) {
+      digitalWrite(statusLED, HIGH); // power on the LED
+      delay(250);
+      digitalWrite(statusLED, LOW); // power on the LED
+      delay(250);
+      digitalWrite(statusLED, HIGH); // power on the LED
+      delay(250);
+      digitalWrite(statusLED, LOW); // power on the LED
+      delay(250);
       delay(1000);
     } else {
       start_wav_file();
