@@ -53,7 +53,6 @@ void sensor_pir_data_loop(void * pvParameters) {
   Serial.println(xPortGetCoreID());
   while(true) {
     npir = digitalRead(pirPin);
-
     if(npir != pirValue) {
       pirValue = npir;
       time_to_file(&data_pir_output);
