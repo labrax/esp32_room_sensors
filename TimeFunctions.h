@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <RTClib.h> //RTC: DS3231 (raspberry pi-like adapter)
 #include "wifi_pass.h"
+#include "defines.h"
 
 extern RTC_DS3231 rtc;
 
@@ -21,5 +22,7 @@ void updateTimeFromRTC();
 void printLocalTime();
 void rtc_prepare();
 void tick_time_update();
+
+long current_time();
 
 #endif

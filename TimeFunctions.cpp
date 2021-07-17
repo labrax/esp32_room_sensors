@@ -57,9 +57,9 @@ void printLocalTime() {
 }
 
 void rtc_prepare() {
-  if (! rtc.begin()) {
+  if (SKIP_RTC | (!rtc.begin())) {
     rtc_start = 0;
-    Serial.println("Couldn't find RTC");
+    Serial.println("RTC not found or disabled.");
   } else {
     rtc_start = 1;
   }
@@ -67,7 +67,7 @@ void rtc_prepare() {
   if(rtc_start == 1) {
     DateTime now = rtc.now();
     Serial.printf("RTC time is: %04d%02d%02d,%02d:%02d:%02d\n", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-    if(now.year() < 2023) {
+    if((now.year() < 2021) | (now.year() > 2021)) {
       Serial.println("Updating time\n");
       waitWifiLoop();
       updateTime();
@@ -82,7 +82,7 @@ void rtc_prepare() {
       updateTimeFromRTC();
     }
   } else { //rtc_start == 0
-    Serial.println("RTC clock not working, obtaining online time");
+    Serial.println("RTC clock not working or disabled, obtaining online time");
     waitWifiLoop();
     updateTime();
   }
@@ -96,4 +96,10 @@ void tick_time_update() {
     getLocalTime(&a0);
     current_tm = &a0;
   }
+}
+
+long current_time() {
+  time_t now;
+  time(&now);
+  return (long) now;
 }

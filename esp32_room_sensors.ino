@@ -6,11 +6,14 @@
 #include "defines.h" //port definitions
 #include "SDData.h"
 #include "TimeFunctions.h"
+#include "accel.h"
 
 //task handlers
 TaskHandle_t DataTask;
 TaskHandle_t DataPIRTask;
 TaskHandle_t DataAudioTask;
+TaskHandle_t DataAccelTask;
+TaskHandle_t InputHandlingTask;
 
 void sensor_data_loop(void * pvParameters) {
   Serial.print("sensor_data_loop() running on core ");
@@ -49,8 +52,6 @@ void sensor_data_loop(void * pvParameters) {
 
 void sensor_pir_data_loop(void * pvParameters) {
   static int npir = 0;
-  Serial.print("sensor_pir_data_loop() running on core ");
-  Serial.println(xPortGetCoreID());
   while(true) {
     npir = digitalRead(pirPin);
     if(npir != pirValue) {
@@ -70,12 +71,62 @@ void sensor_pir_data_loop(void * pvParameters) {
   }
 }
 
+void input_loop(void * pvParameters) {
+  while(true) {
+    if(record_streams == 0) {
+      digitalWrite(statusLED, HIGH); // power on the LED
+      vTaskDelay(250 / portTICK_PERIOD_MS);
+      digitalWrite(statusLED, LOW); // power on the LED
+      vTaskDelay(250 / portTICK_PERIOD_MS);
+      digitalWrite(statusLED, HIGH); // power on the LED
+      vTaskDelay(250 / portTICK_PERIOD_MS);
+      digitalWrite(statusLED, LOW); // power on the LED
+      vTaskDelay(250 / portTICK_PERIOD_MS);
+      if(digitalRead(STREAMS_ENABLE_DISABLE_PIN) == HIGH) {
+        tick_time_update(); // this is needed when creating new files
+        start_audio_file();
+        start_accel_file();
+        
+        record_streams = 1;
+        Serial.println("Streams started");
+      }
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+    } else { // record_streams == 1
+      if(digitalRead(STREAMS_ENABLE_DISABLE_PIN) == HIGH) {
+        record_streams = 0;
+        Serial.println("Streams stopping");
+      }
+    }
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+  }
+}
+
+void sensor_accel_loop(void * pvParameters) {
+  while(true) {
+    if(sd_card == 0) {
+      Serial.println("<accel> No SD card setup!");
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+    } else if(record_streams == 1) {
+      loop_accel(); // internally record_streams is also checked
+    } else {
+      vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+  }
+}
+
 void audio_loop(void * pvParameters) {
   Serial.print("audio_loop() running on core ");
   Serial.println(xPortGetCoreID());
   while(true) {
-    //delay(1000);
-    collect_audio_data();
+    if(sd_card == 0) {
+      Serial.println("<mic> No SD card setup!");
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+    } else if(record_streams == 1) {
+      collect_audio_data(); // internally record_streams is also checked
+    }
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+
+    // intensity
     /*
     time_to_file(&data_audio_output);
     for (int i = 0; i < OCTAVES; i++) {
@@ -97,8 +148,6 @@ void audio_loop(void * pvParameters) {
       }
       data_audio_output.flush();
     }*/
-    //print("\n");
-    //!audio
   }
 }
 
@@ -136,10 +185,11 @@ void setup() {
   adc1_config_channel_atten(photoPin, ADC_ATTEN_DB_11);
   adc1_config_channel_atten(dustPin, ADC_ATTEN_DB_11);
   bme.begin(0x76);
+  mpu.Initialize();
 
   start_sd();
   start_audio();
-  pinMode(AUDIO_DISABLE_PIN, INPUT);
+  pinMode(STREAMS_ENABLE_DISABLE_PIN, INPUT);
 
   #ifdef WEBSERVER
   Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
@@ -178,6 +228,24 @@ void setup() {
         NULL,  /* Task input parameter */
         0,  /* Priority of the task */ 
         &DataPIRTask,  /* Task handle. */
+        1); /* Core where the task should run */
+
+  xTaskCreatePinnedToCore(
+        input_loop, /* Function to implement the task */
+        "input_loop", /* Name of the task */
+        4096,  /* Stack size in words */
+        NULL,  /* Task input parameter */
+        0,  /* Priority of the task */ 
+        &InputHandlingTask,  /* Task handle. */
+        1); /* Core where the task should run */
+
+  xTaskCreatePinnedToCore(
+        sensor_accel_loop, /* Function to implement the task */
+        "sensor_accel_loop", /* Name of the task */
+        4096,  /* Stack size in words */
+        NULL,  /* Task input parameter */
+        0,  /* Priority of the task */ 
+        &DataAccelTask,  /* Task handle. */
         1); /* Core where the task should run */
 
   //status info
