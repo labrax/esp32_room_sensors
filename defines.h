@@ -14,8 +14,8 @@
 #define SD_CARD_CS_PIN 5
 #define dustLEDPin 33
 
-//sensor control
-#define SENSOR_TIC_SEC 60
+//delays on data collection
+#define SENSOR_TIC_SEC 300
 #define SENSOR_PIR_TIC_SEC 1
 
 //audio defines
