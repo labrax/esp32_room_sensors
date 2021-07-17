@@ -80,48 +80,22 @@ void i2s_adc(void *arg) {
   char* i2s_read_buff = (char*) i2_read_buff_vector;
   uint8_t* flash_write_buff = (uint8_t*) flash_write_buff_vector;
 
-  // by default doesn't record, until the button is pressed
-  uint8_t record_audio = 0;
-  
-  while(true) {
-    if(sd_card == 0) {
-      Serial.println("No SD card setup!");
-      delay(1000);
-    } else if(record_audio == 0) {
-      digitalWrite(statusLED, HIGH); // power on the LED
-      delay(250);
-      digitalWrite(statusLED, LOW); // power on the LED
-      delay(250);
-      digitalWrite(statusLED, HIGH); // power on the LED
-      delay(250);
-      digitalWrite(statusLED, LOW); // power on the LED
-      delay(250);
-      if(digitalRead(AUDIO_DISABLE_PIN) == HIGH) {
-        record_audio = 1;
-      }
-      delay(1000);
-    } else {
-      start_audio_file();
-      Serial.println("Recording started");
-      while(digitalRead(AUDIO_DISABLE_PIN) == LOW) {
-          //read data from I2S bus, in this case, from ADC.
-          i2s_read(I2S_PORT, (void*) i2s_read_buff, i2s_read_len, &bytes_read, portMAX_DELAY);
-          //example_disp_buf((uint8_t*) i2s_read_buff, 64);
-          //save original data from I2S(ADC) into flash.
-          i2s_adc_data_scale(flash_write_buff, (uint8_t*)i2s_read_buff, i2s_read_len);
-          data_audio_raw_output.write((const byte*) flash_write_buff, i2s_read_len);
-          flash_wr_size += i2s_read_len;
-      }
-      Serial.println("Recording stopped");
-      record_audio = 0;
-      close_audio_file();
-    }
+  while(record_streams == 1) {
+      //read data from I2S bus, in this case, from ADC.
+      i2s_read(I2S_PORT, (void*) i2s_read_buff, i2s_read_len, &bytes_read, portMAX_DELAY);
+      //example_disp_buf((uint8_t*) i2s_read_buff, 64);
+      //save original data from I2S(ADC) into flash.
+      i2s_adc_data_scale(flash_write_buff, (uint8_t*)i2s_read_buff, i2s_read_len);
+      data_audio_raw_output.write((const byte*) flash_write_buff, i2s_read_len);
+      flash_wr_size += i2s_read_len;
   }
+  close_audio_file();
 }
 
 void collect_audio_data() {
   i2s_adc(NULL);
 
+  // operations for FFT:
   /*
   esp_err_t err = i2s_read(I2S_PORT,
                            (char *) samples,
