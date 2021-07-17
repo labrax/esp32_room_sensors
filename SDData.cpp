@@ -6,6 +6,7 @@ File data_output;
 File data_pir_output;
 //File data_audio_output;
 File data_audio_raw_output;
+File data_accel_output;
 int write_n;
 
 void start_sd() {
@@ -87,7 +88,6 @@ void start_sd() {
 }
 
 void start_audio_file() {
-  tick_time_update();
   char audio_wav_data_file[32];
   sprintf(audio_wav_data_file, "/%04d%02d%02d_%02d%02d%02d_audio.raw", current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
   data_audio_raw_output = SD.open(audio_wav_data_file, FILE_WRITE);
@@ -96,9 +96,23 @@ void start_audio_file() {
   }
 }
 
+void start_accel_file() {
+  char accel_data_file[32];
+  sprintf(accel_data_file, "/%04d%02d%02d_%02d%02d%02d_accel.bin", current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
+  data_accel_output = SD.open(accel_data_file, FILE_WRITE);
+  if(!data_accel_output) {
+    Serial.printf("Failed to open accel file: %s\n", accel_data_file);
+  }
+}
+
 void close_audio_file() {
   data_audio_raw_output.flush();
   data_audio_raw_output.close();
+}
+
+void close_accel_file() {
+  data_accel_output.flush();
+  data_accel_output.close();
 }
 
 void time_to_file(File * f) {
