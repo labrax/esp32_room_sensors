@@ -3,7 +3,9 @@
 // Case: rounded base tray + friction-fit lid + optional KEY1 plunger
 // Print base upright, lid upside-down (top face on the bed).
 
-part = "base";          // "base", "lid", "lid_pir", "plunger", "assembly", "assembly_pir"
+part = "base";          // "base", "base_501", "lid", "lid_501", "lid_pir", "plunger",
+                        // "pir501_cover", "mic_tube", "assembly", "assembly_pir",
+                        // "assembly_501", "none"
 
 $fn = 64;
 
@@ -385,6 +387,31 @@ module plunger() {
     }
 }
 
+// ---------------- MIC1 gasket / tube (HS-3 test part) ----------------
+// Short tube between the INMP441 port and the 4 mm lid hole. 4 mm ID,
+// 1.2 mm wall, 10 mm flange at each end. mic_tube_len is the overall
+// length, flanges included. Print standing on a flange (as oriented).
+mic_tube_id       = 4.0;
+mic_tube_wall     = 1.2;
+mic_tube_len      = is_undef(mic_tube_len) ? 16.0 : mic_tube_len;
+mic_tube_flange_d = 10.0;
+mic_tube_flange_t = 1.2;
+mic_tube_ft       = min(mic_tube_flange_t, mic_tube_len / 2);
+
+module mic_tube() {
+  difference() {
+    union() {
+      cylinder(d=mic_tube_id + 2*mic_tube_wall, h=mic_tube_len);
+      cylinder(d=mic_tube_flange_d, h=mic_tube_ft);
+      translate([0, 0, mic_tube_len - mic_tube_ft])
+        cylinder(d=mic_tube_flange_d, h=mic_tube_ft);
+    }
+    // 4 mm through-bore
+    translate([0, 0, -0.1])
+      cylinder(d=mic_tube_id, h=mic_tube_len + 0.2);
+  }
+}
+
 // ---------------- output ----------------
 if (part == "base") {
   base();
@@ -405,6 +432,9 @@ if (part == "base") {
 } else if (part == "plunger") {
   // print orientation: base plate on the bed
   translate([0, 0, -switch_top]) plunger();
+} else if (part == "mic_tube") {
+  // print orientation: flange on the bed, tube standing up
+  mic_tube();
 } else if (part == "assembly_pir") {
   color("SteelBlue") base();
   color("LightSteelBlue", 0.35) lid(true);

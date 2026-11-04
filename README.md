@@ -14,7 +14,8 @@ readings.
 | `src/esp32_room_sensors/` | Arduino sketch and firmware sources |
 | `case/` | Parametric OpenSCAD case, STLs, previews; see [`case/README.md`](case/README.md) |
 | `pcb/` | Gerber/drill files and source archive; see [`pcb/README.md`](pcb/README.md) |
-| `tools/` | Gerber preview/raster helpers |
+| `tools/` | Gerber preview/raster helpers, microphone comparison and sweep generator |
+| `test/mic_case/` | Standalone INMP441 + SD WAV recorder for the HS-3 bench test |
 
 ## Firmware
 
@@ -34,6 +35,9 @@ Copy `src/esp32_room_sensors/wifi_pass.example.h` to
 
 - **Case:** [`case/README.md`](case/README.md) covers dimensions, printing,
   assembly, sensor openings, and the PIR variants.
+- **Microphone bench test:** [`docs/mic_case_test.md`](docs/mic_case_test.md)
+  is the HS-3 protocol for measuring the INMP441 with and without the lid.
+  The standalone recorder is in [`test/mic_case/`](test/mic_case/README.md).
 - **PCB:** [`pcb/README.md`](pcb/README.md) covers the Gerber/drill files and
   the EasyEDA order note.
 - The case was fitted to the PCB outline, mounting holes, and component
