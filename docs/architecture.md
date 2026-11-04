@@ -13,6 +13,12 @@ This record resolves the findings in HS-2. Each finding is marked **confirmed**,
 rejected alternatives, and the deferrals. The backlog maps every approved item
 to a child ticket.
 
+> **Update 2026-11-04:** HS-12 requests a WiFi AP mode at boot. The "WiFi off
+> after boot" part of D2 and the "delete `WEBSERVER`" decision in D3 are
+> provisional pending HS-12. The rest of this record stands. HS-4 should keep
+> the WiFi policy pluggable so AP mode can be added without reworking the time
+> source logic.
+
 No firmware, hardware, or case changes are made in HS-2. This document is the
 only repository change.
 
