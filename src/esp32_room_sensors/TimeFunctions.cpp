@@ -5,13 +5,13 @@
 #include <string.h>
 #include <time.h>
 
+#include "WifiConfig.h"
+
 RTC_DS3231 rtc;
 bool rtc_present = false;
 TimeSource time_source = TimeSource::None;
 bool time_valid = false;
 
-const char* ssid       = WIFI_SSID;
-const char* password   = WIFI_PASSWORD;
 const char* ntpServer = "pool.ntp.org";
 
 static unsigned long last_rtc_read_ms = 0;
@@ -27,16 +27,12 @@ static void set_system_time(struct tm tm) {
   settimeofday(&tv, NULL);
 }
 
-static bool wifi_credentials_configured() {
-  return strcmp(WIFI_SSID, "YOUR_SSID") != 0 && strlen(WIFI_SSID) > 0;
-}
-
 // HS-12: with an always-on AP the radio must stay up. Without it, HS-4's
 // original policy applies: drop STA after the sync and turn WiFi off.
 // Keep the decision in one place so the time logic stays policy-free.
 static void apply_post_sync_wifi_policy() {
 #if AP_ALWAYS_ON
-  // AP+STA stays up; STA remains associated for future NTP use.
+  // AP+STA radio stays up per HS-12; there is no periodic NTP resync.
   Serial.println("[wifi] AP_ALWAYS_ON: keeping AP+STA up after the time sync.");
 #else
   WiFi.disconnect(true);
@@ -90,11 +86,13 @@ void updateTimeFromRTC() {
 
 // Returns true when NTP set the system clock. Bounded: connect 15 s, sync 10 s.
 static bool try_ntp() {
-  if (!wifi_credentials_configured()) {
+  if (!wifi_config_is_configured()) {
     Serial.println("WiFi credentials are placeholders; skipping NTP.");
     return false;
   }
 
+  const char *ssid = wifi_config_ssid();
+  const char *password = wifi_config_password();
   Serial.printf("Connecting to WiFi %s (max %lu s)...\n", ssid,
                 WIFI_CONNECT_TIMEOUT_MS / 1000UL);
 #if AP_ALWAYS_ON

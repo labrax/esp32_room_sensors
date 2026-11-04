@@ -7,7 +7,9 @@
 // WiFi AP (HS-12). Credentials are AP_SSID/AP_PASSWORD in wifi_pass.h; see
 // wifi_pass.example.h.
 // 1 = AP up for the whole runtime (default, user request).
-// 0 = no AP; the status page is then reachable on the STA address only.
+// 0 = no AP. The status page and provisioning form are then unavailable too:
+// the HS-4 time policy turns WiFi off after the sync, and an RTC-valid boot
+// never starts the STA.
 // The AP radio heats the board next to the BME280. The bias is unmeasured on
 // this bench (see docs/architecture.md 5.1); treat absolute temperature as
 // indicative while the AP is on.

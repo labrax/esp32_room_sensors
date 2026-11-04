@@ -13,10 +13,10 @@ This record resolves the findings in HS-2. Each finding is marked **confirmed**,
 rejected alternatives, and the deferrals. The backlog maps every approved item
 to a child ticket.
 
-> **Update 2026-11-04:** HS-12 added a WiFi AP mode at boot. The "WiFi off
-> after boot" part of D2 and the "delete `WEBSERVER`" decision in D3 were
-> qualified by HS-12 and are implemented in section 5.1. The rest of this record
-> stands.
+> **Update 2026-11-04:** HS-12 added a WiFi AP mode at boot with a runtime STA
+> provisioning form. The "WiFi off after boot" part of D2 and the "delete
+> `WEBSERVER`" decision in D3 were qualified by HS-12 and are implemented in
+> section 5.1. The rest of this record stands.
 
 No firmware, hardware, or case changes are made in HS-2. This document is the
 only repository change.
@@ -287,9 +287,11 @@ authoritative record of whether the timestamps in that boot are trustworthy.
   include-order trap, and the `btStop()` compatibility dependency.
 
 Deferred: a read-only `GET /api/readings` endpoint, served from a published
-`SensorSnapshot`, STA-only on the local network, no auth (the device has no AP
-mode). It is only worth adding after the runtime refactor and only if the user
-wants live readings. Do not restore the old HTML page.
+`SensorSnapshot`, STA-only on the local network, no auth. HS-12 now provides the
+always-on AP status page, so this would be a separate STA-only readings API
+rather than the only way to see live values. It is only worth adding after the
+runtime refactor and only if the user wants live readings. Do not restore the
+old HTML page.
 
 Rejected: fixing the current branch in place. It would need handler declarations,
 an altitude constant, a lock, its own task or a non-blocking loop, and a test;
@@ -311,34 +313,59 @@ page stays deleted.
   In AP+STA the hardware forces the AP onto the STA channel once the router
   associates, so channel 1 is a request, not a guarantee. STA stays up for NTP;
   nothing turns WiFi off after the time sync.
-- **Credentials:** `AP_SSID` (default `esp32-room-sensors`) and `AP_PASSWORD` in
-  `wifi_pass.h`; `wifi_pass.example.h` documents them. `wifi_pass.h` is
+- **AP credentials:** `AP_SSID` (default `esp32-room-sensors`) and `AP_PASSWORD`
+  in `wifi_pass.h`; `wifi_pass.example.h` documents them. `wifi_pass.h` is
   git-ignored and has no default, so the password must be set. `StatusServer.cpp`
   fails the build if `AP_PASSWORD` is shorter than 8 characters.
-- **Endpoints:** `GET /` (HTML table, 5 s meta refresh) and `GET /api/status`
-  (JSON: `uptime_s`, `temperature_c`, `humidity_pct`, `pressure_hpa`,
-  `sensors_valid`, `sensor_age_ms`, `time_source`, `time_valid`, `rtc_present`,
-  `time_utc`, `sd_ok`, `recording`, `sta_connected`, `sta_ip`, `ap_ip`,
-  `ap_clients`). Unknown paths return 404. No auth, no captive portal, no file
-  listing.
+- **STA credentials and provisioning:** `WIFI_SSID`/`WIFI_PASSWORD` are the
+  compile-time fallback. The form on `GET /` saves a pair to NVS (namespace
+  `wifi`, keys `ssid`/`pass`); `WifiConfig` loads it in `setup()` before the
+  AP/server and `try_ntp()` uses it. Saved wins over fallback. Validation: SSID
+  1-32 and WPA2 password 8-63 printable ASCII characters, control and high
+  bytes rejected. A `valid` commit marker written last prevents a partial pair
+  from being used. The form is ASCII-only; non-ASCII SSIDs must be set in
+  `wifi_pass.h` and must be valid UTF-8, so `/api/status` stays valid JSON. Save
+  is for the next boot; the handler sends its response and then restarts. The
+  password is never rendered, returned in JSON, or logged. A
+  missing/partial/invalid/oversized saved pair falls back to `wifi_pass.h`.
+- **Endpoints:** `GET /` (status page plus the WiFi form, manual Refresh link;
+  the old 5 s meta refresh is intentionally gone so a half-typed form is not
+  wiped) and `GET /api/status` (JSON: `uptime_s`, `temperature_c`,
+  `humidity_pct`, `pressure_hpa`, `sensors_valid`, `sensor_age_ms`,
+  `time_source`, `time_valid`, `rtc_present`, `time_utc`, `sd_ok`, `recording`,
+  `sta_connected`, `sta_ip`, `ap_ip`, `ap_clients`, `sta_ssid`,
+  `sta_provisioned`). `POST /api/wifi` takes form-urlencoded `ssid`/`password`;
+  400 on invalid input with no NVS write, 200 then a restart on success. Unknown
+  paths return 404. No auth, no captive portal, no file listing.
 - **Ownership:** the sensor task publishes a `SensorSnapshot` under a mutex
   after each BME280 read; the handlers copy it and never touch I2C. A dedicated
   `status_server` task (core 1, priority 1, 8192 B) polls
   `server.handleClient()` every 10 ms, so a slow HTTP client cannot stall the
   loggers. The `loop()` delay and the SD restart path are unchanged.
-- **Boot order:** the AP starts in `setup()` before `init_time()`, so an
-  AP-only boot still has an AP while the bounded STA/NTP attempt runs.
-  `init_time()` uses `WIFI_AP_STA` and the HS-12 post-sync policy leaves the
-  radio on; AP-only time comes from the HS-4 RTC/compile fallback. The time and
+- **Boot order:** `wifi_config_begin()` runs before the AP/server; the AP still
+  starts in `setup()` before `init_time()`, so an AP-only boot still has an AP
+  while the bounded STA/NTP attempt runs. Saved or fallback STA credentials
+  drive `try_ntp()`. `init_time()` uses `WIFI_AP_STA` and the HS-12 post-sync
+  policy leaves the radio on; AP-only time comes from the HS-4 RTC/compile
+  fallback. Wrong or unreachable credentials leave the AP up and fall back to
+  RTC/compile time, so the page stays reachable for correction. A valid RTC
+  makes `init_time()` return before NTP, so the STA may stay disconnected on
+  that boot; the saved pair is used on a boot that needs NTP. The time and
   status modules share the HS-4 `time_source`/`time_valid`/`rtc_present` API.
-- **Security:** WPA2-PSK, link-local only, no HTTP auth. Anyone who knows the
-  PSK is on the same L2 network as the board. Acceptable while the page is
-  read-only and the device is not exposed to the internet.
+- **Security:** WPA2-PSK for the AP, link-local only, no HTTP login. Anyone who
+  can reach the page on the AP or the STA LAN can read status and change the STA
+  credentials; LAN access is not gated by the AP password. This is accepted for
+  a local-only device not exposed to the internet. The form is plain HTTP with
+  no CSRF token, so a malicious page on the same LAN could submit it; accepted
+  under the same local-only assumption. NVS stores the STA password in
+  plaintext, so physical flash access also exposes it.
 - **Thermal:** the AP radio adds heat next to the BME280. The bias is
   **unmeasured** (the board was reserved during HS-12). Measure AP on vs off for
   1 h on the bench; if the offset exceeds about 0.5 °C, set `AP_ALWAYS_ON 0` and
-  open a follow-up for a boot window. Until then, absolute temperature is
-  indicative while the AP is on.
+  open a follow-up for a boot window. That also removes the status page and the
+  provisioning form, because HS-4 turns WiFi off after the sync; a later
+  boot-window policy must keep the radio up while the window is open. Until
+  then, absolute temperature is indicative while the AP is on.
 - **Open:** HS-6 owns recording state; HS-8 owns the SD/`loop()` rework. This
   module only reads `sd_card`, `record_streams`, and the HS-4 time globals.
 
@@ -664,6 +691,10 @@ Per-ticket gates are in the child tickets. The shared bench matrix:
 | Invalid RTC + AP | NTP within 25 s; RTC adjusted; `time_source=ntp`; AP still reachable |
 | AP-only boot | SSID visible, WPA2, DHCP lease `192.168.4.x`; `/` and `/api/status`; `time_source=compile` or `rtc`, `time_valid` matches |
 | AP+STA | STA lease from the router; AP stays up after the time sync; `sta_connected`/`sta_ip` correct |
+| Form save, valid | 200 response; reboot; `sta_ssid`/`sta_provisioned` persist and the other JSON fields stay valid |
+| Form save, invalid | Short/control/high-byte/over-long input: 400, no NVS write, the previous pair stays intact |
+| Wrong STA credentials | AP stays up, page reachable, `time_source=compile` or `rtc`, no WDT |
+| RTC-valid boot, saved pair | `time_source=rtc`, no forced STA association, the form still shows the saved target |
 | AP thermal | 1 h AP on vs off; BME280 bias documented; > 0.5 °C opens a follow-up |
 | 2 h audio + accel + CSV | No truncated CSV, no interleaved audio, no `sd_ok` flapping |
 | 10 min WAV | Playable 16 kHz mono; duration within 1 % |

@@ -4,8 +4,8 @@ Firmware and hardware for a WiFi-connected ESP32 room-sensor node.
 
 Sensors: BME280 (temperature, humidity, pressure), photoresistor, dust sensor,
 PIR, MPU-6050 accelerometer, and INMP441 I2S microphone. Data is logged to an
-SD card; a DS3231 RTC provides timestamps; an optional web server exposes the
-readings.
+SD card; a DS3231 RTC provides timestamps; a local access-point status page and
+JSON API expose the readings.
 
 ## Repository layout
 
@@ -29,6 +29,14 @@ I2S drivers.
 Copy `src/esp32_room_sensors/wifi_pass.example.h` to
 `src/esp32_room_sensors/wifi_pass.h` and fill in the network credentials.
 `wifi_pass.h` is ignored by git.
+
+At boot the board starts the `esp32-room-sensors` access point (WPA2, password
+from `AP_PASSWORD`). Join it, open `http://192.168.4.1/`, and use the WiFi form
+to save the router SSID and password. Saved credentials live in NVS and override
+the `WIFI_SSID`/`WIFI_PASSWORD` fallback on the next boot; the device restarts
+after saving and the AP stays up. The page has no login, so anyone who can reach
+it on the AP or the LAN can change the network. `GET /api/status` is the JSON view;
+`POST /api/wifi` is the form endpoint.
 
 ## Hardware
 

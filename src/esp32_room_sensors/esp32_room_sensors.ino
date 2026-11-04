@@ -6,6 +6,7 @@
 #include "defines.h" //port definitions
 #include "SDData.h"
 #include "TimeFunctions.h"
+#include "WifiConfig.h"
 #include "accel.h"
 
 //task handlers
@@ -174,6 +175,8 @@ void setup() {
   // and an AP-only boot must still get an AP. With AP_ALWAYS_ON, init_time()
   // keeps WIFI_AP_STA and never turns the radio off.
   btStop(); // BT is unused; keep it off to limit heat next to the BME280
+  // Load saved STA credentials before anyone reads them (status page, NTP).
+  wifi_config_begin();
   status_server_begin();
 
   // Time init is the only network step at boot; it is fully bounded.
