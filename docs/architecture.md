@@ -218,7 +218,10 @@ Worst case is about 30 s with a 25 s network budget. No path blocks forever.
 - **RTC:** read it at boot and every hour; `settimeofday` from a zeroed
   `struct tm` with `tm_isdst = 0`. If `lostPower()` is true or the year is
   outside the range, treat it as invalid and try NTP. If NTP succeeds and an RTC
-  is present, adjust the RTC.
+  is present, adjust the RTC. The MPU6050 also answers at `0x68`; `init_time()`
+  reads its WHO_AM_I first and skips the RTC probe when an MPU is present. A
+  DS3231 cannot share `0x68` with the MPU; use MPU address `0x69` (AD0 high) or
+  a separate bus if both are fitted.
 - **NTP:** call `configTime(0, 0, "pool.ntp.org")` only after a bounded connect.
   Use `getLocalTime(&tm, 10000)`. With `AP_ALWAYS_ON=0`, then
   `WiFi.mode(WIFI_OFF)`; with the HS-12 AP, keep `WIFI_AP_STA` up (section 5.1).
@@ -546,7 +549,7 @@ data formats, `docs/` layout, CI.
 | I2S SCK | 14 | INMP441 |
 | I2S WS | 15 | INMP441 |
 | I2S SD | 4 | INMP441 data |
-| I2C SDA | 21 | BME280 0x76/0x77, MPU6050 0x68 |
+| I2C SDA | 21 | BME280 0x76/0x77, MPU6050 0x68 (DS3231 is also 0x68; use MPU 0x69 if both are fitted) |
 | I2C SCL | 22 | 100 kHz, 50 ms timeout |
 | SPI SCK/MISO/MOSI | 18/19/23 | default VSPI |
 
