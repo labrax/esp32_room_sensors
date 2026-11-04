@@ -290,6 +290,53 @@ Rejected: fixing the current branch in place. It would need handler declarations
 an altitude constant, a lock, its own task or a non-blocking loop, and a test;
 that is more work than deleting it and re-adding a smaller endpoint later.
 
+### 5.1 HS-12: WiFi AP mode at boot
+
+**Decision: always-on AP in `WIFI_AP_STA`, with a small status page.** This
+qualifies D2 ("WiFi off after boot") and D3 ("no AP mode"); the old `WEBSERVER`
+page stays deleted.
+
+- **Policy:** `AP_ALWAYS_ON 1` (`defines.h`). The AP is up from boot for the
+  whole runtime, because the user asked for a phone or laptop to reach the board
+  without a router. Rejected: a 10 min provisioning window, a button-triggered
+  window, and fallback-AP-only. A window saves heat and power, but needs a
+  trigger the case does not have and makes the page unavailable when it matters.
+- **Radio:** `WiFi.mode(WIFI_AP_STA)`; `softAPConfig(192.168.4.1/24)`;
+  `softAP(AP_SSID, AP_PASSWORD, 1, 0, 4)`. WPA2-PSK, channel 1, four clients.
+  In AP+STA the hardware forces the AP onto the STA channel once the router
+  associates, so channel 1 is a request, not a guarantee. STA stays up for NTP;
+  nothing turns WiFi off after the time sync.
+- **Credentials:** `AP_SSID` (default `esp32-room-sensors`) and `AP_PASSWORD` in
+  `wifi_pass.h`; `wifi_pass.example.h` documents them. `wifi_pass.h` is
+  git-ignored and has no default, so the password must be set. `StatusServer.cpp`
+  fails the build if `AP_PASSWORD` is shorter than 8 characters.
+- **Endpoints:** `GET /` (HTML table, 5 s meta refresh) and `GET /api/status`
+  (JSON: `uptime_s`, `temperature_c`, `humidity_pct`, `pressure_hpa`,
+  `sensors_valid`, `sensor_age_ms`, `time_source`, `time_valid`, `time_utc`,
+  `sd_ok`, `recording`, `sta_connected`, `sta_ip`, `ap_ip`, `ap_clients`).
+  Unknown paths return 404. No auth, no captive portal, no file listing.
+- **Ownership:** the sensor task publishes a `SensorSnapshot` under a mutex
+  after each BME280 read; the handlers copy it and never touch I2C. A dedicated
+  `status_server` task (core 1, priority 1, 8192 B) polls
+  `server.handleClient()` every 10 ms, so a slow HTTP client cannot stall the
+  loggers. The `loop()` delay and the SD restart path are unchanged.
+- **Boot order:** the AP starts right after `WiFi.begin()` and before
+  `rtc_prepare()`. `rtc_prepare()` blocks in `waitWifiLoop()` until the STA
+  associates (HS-4 bounds it), so starting the AP later would leave an AP-only
+  boot with no AP. AP-only time still comes from the HS-4 fallback; until that
+  lands, `time_source` is inferred from the epoch and the STA state.
+- **Security:** WPA2-PSK, link-local only, no HTTP auth. Anyone who knows the
+  PSK is on the same L2 network as the board. Acceptable while the page is
+  read-only and the device is not exposed to the internet.
+- **Thermal:** the AP radio adds heat next to the BME280. The bias is
+  **unmeasured** (the board was reserved during HS-12). Measure AP on vs off for
+  1 h on the bench; if the offset exceeds about 0.5 °C, set `AP_ALWAYS_ON 0` and
+  open a follow-up for a boot window. Until then, absolute temperature is
+  indicative while the AP is on.
+- **Open:** HS-4 owns the real `time_source`/fallback API; HS-6 owns recording
+  state; HS-8 owns the SD/`loop()` rework. This module only reads `sd_card`,
+  `record_streams`, and `rtc_start`.
+
 ---
 
 ## 6. Input and switch

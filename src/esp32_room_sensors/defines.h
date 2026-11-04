@@ -1,7 +1,21 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-//#define WEBSERVER
+// The old WEBSERVER page is gone (HS-2 D3, requalified by HS-12). The status
+// page lives in StatusServer.*.
+
+// WiFi AP (HS-12). Credentials are AP_SSID/AP_PASSWORD in wifi_pass.h; see
+// wifi_pass.example.h.
+// 1 = AP up for the whole runtime (default, user request).
+// 0 = no AP; the status page is then reachable on the STA address only.
+// The AP radio heats the board next to the BME280. The bias is unmeasured on
+// this bench (see docs/architecture.md 5.1); treat absolute temperature as
+// indicative while the AP is on.
+#ifndef AP_ALWAYS_ON
+#define AP_ALWAYS_ON 1
+#endif
+#define AP_CHANNEL 1     // requested; in AP+STA the AP follows the STA channel
+#define AP_MAX_CLIENTS 4 // ESP32 softAP limit
 
 //status
 #define statusLED 2
@@ -19,7 +33,7 @@ extern unsigned char record_streams; // store information if the mic / gps data 
 #define SENSOR_PIR_TIC_SEC 1
 
 //audio defines
-#include <FreeRTOS.h>
+#include <freertos/FreeRTOS.h>
 #include <driver/i2s.h>
 #define STREAMS_ENABLE_DISABLE_PIN 13
 #define I2S_SCK 14 // ports

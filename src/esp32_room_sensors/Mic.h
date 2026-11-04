@@ -1,9 +1,10 @@
 #ifndef MIC_H
 #define MIC_H
 
-#include <FreeRTOS.h>
+#include <freertos/FreeRTOS.h>
 #include <driver/i2s.h> //mic: INMP441
-#include <arduinoFFT.h> //mic: INMP441
+// arduinoFFT is not installed and the FFT block in Mic.cpp is commented out;
+// re-add the include and pin the library before enabling it again.
 //#include "MicAux.h"
 #include "defines.h"
 #include "SDData.h"

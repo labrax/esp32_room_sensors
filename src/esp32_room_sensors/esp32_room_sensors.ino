@@ -1,6 +1,6 @@
 #include <time.h>
 
-#include "ServerFunctions.h"
+#include "StatusServer.h"
 #include "sensors.h"
 #include "Mic.h" //mic: useful functions
 #include "defines.h" //port definitions
@@ -25,6 +25,7 @@ void sensor_data_loop(void * pvParameters) {
     temperature = bme.readTemperature();
     humidity = bme.readHumidity();
     pressure = bme.readPressure() / 100.0F;
+    status_publish_sensors(temperature, humidity, pressure);
 
     delay(1000);
     //dust
@@ -165,16 +166,14 @@ void setup() {
   Serial.printf("Connecting to %s ", ssid);
   WiFi.begin(ssid, password);
 
+  // AP + status page. Started before rtc_prepare() because that call blocks in
+  // waitWifiLoop() until the STA associates (HS-4 bounds it). An AP-only boot
+  // must still get an AP, so the AP comes up first and the STA joins later.
+  btStop(); // BT is unused; keep it off to limit heat next to the BME280
+  status_server_begin();
+
   rtc_prepare();
   Serial.printf("rtc = %d\n", rtc_start);
-
-  #ifndef WEBSERVER
-  time_to_file(NULL);
-  Serial.println("disconnecting wifi");
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
-  btStop();
-  #endif
 
   time_to_file(NULL);
   Serial.println("starting sensors");
@@ -190,15 +189,6 @@ void setup() {
   start_sd();
   start_audio();
   pinMode(STREAMS_ENABLE_DISABLE_PIN, INPUT);
-
-  #ifdef WEBSERVER
-  Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
-  server.on("/", handle_OnConnect);
-  server.onNotFound(handle_NotFound);
-  server.begin();
-  time_to_file(NULL);
-  Serial.println("HTTP server started");
-  #endif
 
   time_to_file(NULL);
   Serial.println("starting threads");
@@ -255,9 +245,6 @@ void setup() {
 void loop()
 {
   delay(10000);
-  #ifdef WEBSERVER
-  server.handleClient();
-  #endif
 
   if(sd_card == 0) {
     Serial.println("Invalid card status, restarting");
