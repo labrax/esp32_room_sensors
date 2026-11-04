@@ -7,6 +7,7 @@
 
 // sensors
 extern Adafruit_BME280 bme;
+extern bool bme_present;
 
 // stored sensor data
 extern int photoValue, pirValue, dustValue;

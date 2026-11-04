@@ -2,6 +2,7 @@
 #include "accel.h"
 
 MPU6050 mpu (Wire);
+bool mpu_present = false;
 
 void tick_accel() {
   //mpu.Execute();

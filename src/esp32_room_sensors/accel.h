@@ -9,6 +9,7 @@
 #include <TinyMPU6050.h>
 
 extern MPU6050 mpu;
+extern bool mpu_present;
 
 struct accel_data {
   long time_recorded;

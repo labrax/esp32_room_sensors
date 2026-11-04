@@ -20,4 +20,5 @@ void close_audio_file();
 void start_accel_file();
 void close_accel_file();
 void time_to_file(File * f);
+void write_session_json();
 #endif

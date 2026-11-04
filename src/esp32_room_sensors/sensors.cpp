@@ -1,6 +1,7 @@
 #include "sensors.h"
 
 Adafruit_BME280 bme;
+bool bme_present = false;
 
 int photoValue = 0, pirValue = 0, dustValue = 0;
 float temperature, humidity, pressure;

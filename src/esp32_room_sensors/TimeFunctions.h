@@ -5,23 +5,33 @@
 #include "wifi_pass.h"
 #include "defines.h"
 
+enum class TimeSource {
+  None,
+  RTC,
+  NTP,
+  Compile
+};
+
 extern RTC_DS3231 rtc;
+extern bool rtc_present;
+extern TimeSource time_source;
+extern bool time_valid;
 
-extern int rtc_start; //start success
-extern const char* ssid; //wifi settings
-extern const char* password;
-extern const char* ntpServer; //ntp settings
-extern const long  gmtOffset_sec;
-extern const int   daylightOffset_sec;
-extern struct tm a0, a1; //current collected time
-extern struct tm * current_tm;
-
-void waitWifiLoop();
-void updateTime();
+// Boot sequence: probe RTC, fall back to bounded NTP, then compile time.
+void init_time();
+// Re-read the RTC when it is the active source (called periodically).
+void service_time();
 void updateTimeFromRTC();
-void printLocalTime();
-void rtc_prepare();
-void tick_time_update();
+
+// UTC formatting helpers. `format_timestamp` -> "YYYYMMDD,HH:MM:SS".
+void format_timestamp(char *buf, size_t len);
+// `format_filename_timestamp` -> "YYYYMMDD_HHMMSS".
+void format_filename_timestamp(char *buf, size_t len);
+// `format_boot_id` -> "YYYYMMDDTHHMMSSZ-xxxxxx".
+void format_boot_id(char *buf, size_t len);
+
+const char *time_source_name();
+const char *reset_reason_name();
 
 long current_time();
 

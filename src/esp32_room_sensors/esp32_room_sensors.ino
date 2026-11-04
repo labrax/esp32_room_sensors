@@ -83,7 +83,6 @@ void input_loop(void * pvParameters) {
       digitalWrite(statusLED, LOW); // power on the LED
       vTaskDelay(250 / portTICK_PERIOD_MS);
       if(digitalRead(STREAMS_ENABLE_DISABLE_PIN) == HIGH) {
-        tick_time_update(); // this is needed when creating new files
         start_audio_file();
         start_accel_file();
         
@@ -155,28 +154,28 @@ void setup() {
   //status info
   pinMode(statusLED, OUTPUT);
   digitalWrite(statusLED, HIGH);
-  delay(5000);
-  
+  delay(1000);
+
   Serial.begin(115200);
   Serial.println();
   Serial.println("#########################################################");
+  Serial.printf("Firmware: %s\n", FW_VERSION);
+  Serial.printf("Reset reason: %s\n", reset_reason_name());
+  Serial.printf("Chip: %s rev %d at %d MHz\n", ESP.getChipModel(),
+                ESP.getChipRevision(), ESP.getCpuFreqMHz());
+  Serial.printf("Flash: %u bytes, free heap: %u bytes\n",
+                ESP.getFlashChipSize(), ESP.getFreeHeap());
 
-  //connect to WiFi
-  Serial.printf("Connecting to %s ", ssid);
-  WiFi.begin(ssid, password);
+  Wire.begin(21, 22, 100000);
+  Wire.setTimeOut(50);
 
-  rtc_prepare();
-  Serial.printf("rtc = %d\n", rtc_start);
+  // Time init is the only network step at boot; it is fully bounded.
+  init_time();
+  Serial.printf("time_source=%s time_valid=%s rtc=%d\n", time_source_name(),
+                time_valid ? "true" : "false", rtc_present);
 
-  #ifndef WEBSERVER
-  time_to_file(NULL);
-  Serial.println("disconnecting wifi");
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
-  btStop();
-  #endif
+  start_sd();
 
-  time_to_file(NULL);
   Serial.println("starting sensors");
   // sensor setup
   pinMode(dustLEDPin, OUTPUT);
@@ -184,23 +183,31 @@ void setup() {
   adc1_config_width(ADC_WIDTH_12Bit);
   adc1_config_channel_atten(photoPin, ADC_ATTEN_DB_11);
   adc1_config_channel_atten(dustPin, ADC_ATTEN_DB_11);
-  bme.begin(0x76);
-  mpu.Initialize();
 
-  start_sd();
+  bme_present = bme.begin(0x76);
+  Serial.printf("BME280: %s\n", bme_present ? "present" : "missing");
+
+  Wire.beginTransmission(0x68);
+  mpu_present = (Wire.endTransmission() == 0);
+  if(mpu_present) {
+    mpu.Initialize();
+  }
+  Serial.printf("MPU6050: %s\n", mpu_present ? "present" : "missing");
+
   start_audio();
   pinMode(STREAMS_ENABLE_DISABLE_PIN, INPUT);
+
+  // Written once per boot, after presence probes, when the SD is mounted.
+  write_session_json();
 
   #ifdef WEBSERVER
   Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
   server.on("/", handle_OnConnect);
   server.onNotFound(handle_NotFound);
   server.begin();
-  time_to_file(NULL);
   Serial.println("HTTP server started");
   #endif
 
-  time_to_file(NULL);
   Serial.println("starting threads");
   //separate thread runnings
   xTaskCreatePinnedToCore(
@@ -255,6 +262,7 @@ void setup() {
 void loop()
 {
   delay(10000);
+  service_time();
   #ifdef WEBSERVER
   server.handleClient();
   #endif
