@@ -318,3 +318,30 @@ module/port mounting) dominate. Next: **D** (vents taped, hole open) and **E**
 (tube) — the tube is the decisive test that bypasses the case cavity.
 
 Analysis: `/tmp/opencode/hs3_serial/compare_abc.md` and `compare_abc.csv`.
+
+### D — VACG lid + side vents taped, MIC1 hole open — 2026-11-04
+
+Files: `/tmp/opencode/hs3_serial/D1.wav` … `D3.wav`; same sweep and setup.
+
+| Config | Run | RMS dBFS | Peak dBFS |
+|---|---|---|---|
+| D — vents taped | 1 | −59.3 | −41.0 |
+| D — vents taped | 2 | −59.1 | −41.1 |
+| D — vents taped | 3 | −59.2 | −40.8 |
+
+- Overall D is **+2.0 to +2.2 dB** vs A; the most repeatable set so far
+  (0.2 dB RMS spread).
+- **1.25 kHz notch persists:** D1 **−12.4 dB**, D2 **−11.2 dB**, D3 **−10.7 dB**
+  (B: −10.7 to −13.1; C: −6.0 to −12.3). Taping the vents does not remove it.
+- 5–6.3 kHz matches B more than C (D 6.3 kHz −78.6/−81.0/−80.6 dBFS; B
+  −79.8/−81.5/−87.7; C −86.7/−88.9/−88.3), confirming the MIC1 hole was open
+  for D.
+- 630/800 Hz and 2 kHz peaks remain (+5 to +9 dB); <200 Hz +3–9 dB (case
+  cavity, not the VACG vents).
+
+**D conclusion:** the VACG lid/side vents are **not** the cause of the comb.
+Together with C (hole sealed) this leaves the case cavity/port geometry or the
+module/port mounting. **E (tube) is the decisive test.** Adding side vents is
+not supported by D; taping the existing side vents did not flatten the notch.
+
+Analysis: `/tmp/opencode/hs3_serial/compare_abcd.md` and `compare_abcd.csv`.
