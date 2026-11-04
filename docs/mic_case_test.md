@@ -293,3 +293,28 @@ level detection but not flat for voice/ASR; **not leave-as-is**. Next: C (hole
 taped), E (tube), then D (vents taped) if needed; add voice/noise sets.
 
 Analysis: `/tmp/opencode/hs3_serial/compare.md` and `compare.csv`.
+
+### C — MIC1 hole sealed (Blu-Tack), vents open — 2026-11-04
+
+Files: `/tmp/opencode/hs3_serial/C1.wav` … `C3.wav`; same sweep and setup.
+
+| Config | Run | RMS dBFS | Peak dBFS |
+|---|---|---|---|
+| C — hole sealed | 1 | −59.8 | −42.5 |
+| C — hole sealed | 2 | −58.8 | −41.3 |
+| C — hole sealed | 3 | −59.8 | −42.7 |
+
+- Overall C is **+1.4 to +2.4 dB** vs A — similar to B; not muffled.
+- **1.25 kHz notch persists:** C1 **−10.2 dB**, C2 **−6.0 dB**, C3 **−12.3 dB**
+  (B: −10.7 to −13.1 dB). Sealing the hole does not remove the comb.
+- C loses **400 Hz** (−2.8 to −3.9 dB) and **5–6.3 kHz** (−3.5 to −6.5 dB)
+  relative to B: the 4 mm hole contributes a direct low-mid/HF path.
+- 630/800 Hz and 2/2.5 kHz peaks are similar to B (+3 to +7 dB).
+- C1/C2/C3 speech-band average is roughly +0.4 to +2.3 dB, with the notch.
+
+**C conclusion:** the 4 mm hole is **not** the primary cause of the 1.25 kHz
+comb; it persists with the hole sealed, so the case cavity/vents (or the
+module/port mounting) dominate. Next: **D** (vents taped, hole open) and **E**
+(tube) — the tube is the decisive test that bypasses the case cavity.
+
+Analysis: `/tmp/opencode/hs3_serial/compare_abc.md` and `compare_abc.csv`.
