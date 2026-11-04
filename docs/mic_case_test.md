@@ -259,6 +259,37 @@ for a port/side-vent design; do not modify the production case in HS-3.
 
 ## 12. Results
 
-**Pending — no bench measurements have been performed.** Add the completed
-run log, the comparison tables/CSV, and the decision here when the measurements
-are done.
+### A/B sweep set — 2026-11-04 (serial capture)
+
+Files: `/tmp/opencode/hs3_serial/A1.wav` … `B3.wav`. Three repeats per
+configuration; 32 kHz/16-bit mono; 100 Hz–10 kHz sweep. Session metadata
+(speaker, volume, measured gap, operator) still to be filled in section 9.
+
+| Config | Run | RMS dBFS | Peak dBFS |
+|---|---|---|---|
+| A — lid off | 1 | −61.2 | −45.6 |
+| A — lid off | 2 | −61.0 | −45.9 |
+| A — lid off | 3 | −60.7 | −45.4 |
+| B — lid on | 1 | −57.9 | −38.6 |
+| B — lid on | 2 | −59.9 | −43.2 |
+| B — lid on | 3 | −59.7 | −42.6 |
+
+- Overall B is **+1.4 to +3.3 dB** relative to A: the case is not broadly
+  muffling.
+- Speech-band average B−A = **+0.6 dB**, but the range is **−12.7 to +7.0 dB**.
+- 1/3-octave: 800 Hz **+7.0 dB**, 1.25 kHz **−12.7 dB**, 2 kHz **+3.6 dB**,
+  630 Hz **+4.2 dB**.
+- 1/24-octave: deep dips at **1.17–1.47 kHz** (−12 to −19.5 dB; worst
+  1307 Hz −19.5 dB) and peaks at **0.6–0.98, 1.96, 2.77–2.85 kHz**
+  (+11 to +13.8 dB). This is a comb/resonance, not a level loss.
+- B1's <200 Hz bands are an outlier (+15–20 dB; B2/B3 +3–8 dB). Check the run
+  log for handling/wind/lid seating; the 1.25 kHz notch is present in all B
+  runs.
+- A repeats are tight (0.3–0.6 dB RMS).
+
+**Decision:** the >6 dB narrow notch in 300–3400 Hz triggers the “try tube; if
+it persists, test vents” row in section 10. The current case is usable for
+level detection but not flat for voice/ASR; **not leave-as-is**. Next: C (hole
+taped), E (tube), then D (vents taped) if needed; add voice/noise sets.
+
+Analysis: `/tmp/opencode/hs3_serial/compare.md` and `compare.csv`.
