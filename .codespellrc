@@ -1,0 +1,6 @@
+[codespell]
+skip = .git,.slim,*.stl,*.3mf,*.png,*.zip,*.pdf
+# pre-empt: valid British spelling; ream: noun in case/README.md; DOUT: I2S
+# signal name; logaritmic: typo in firmware comments left for the runtime
+# ticket so this change stays out of those files.
+ignore-words-list = pre-empt,ream,dout,logaritmic
