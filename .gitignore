@@ -1,1 +1,5 @@
 wifi_pass.h
+__pycache__/
+build/
+.pio/
+.vscode/
