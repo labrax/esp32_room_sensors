@@ -15,7 +15,8 @@ struct SensorSnapshot {
 };
 
 // Starts the AP (per AP_ALWAYS_ON), the HTTP server on port 80, and the
-// dedicated status task. Call once from setup(), after WiFi.begin().
+// dedicated status task. Call once from setup(), before init_time(), so an
+// AP-only boot still gets an AP before the bounded NTP attempt.
 void status_server_begin(void);
 
 // Publishes a new snapshot. Non-blocking; drops the sample if the lock is busy.

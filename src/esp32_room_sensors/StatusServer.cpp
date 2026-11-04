@@ -25,10 +25,6 @@ static SemaphoreHandle_t snapshot_lock = NULL;
 static SensorSnapshot snapshot = {0.0f, 0.0f, 0.0f, false, 0};
 static TaskHandle_t StatusServerTask = NULL;
 
-// HS-4 owns the real time-source API. Until it lands, infer from the epoch:
-// anything after 2021-01-01 means RTC or NTP set the clock.
-static const time_t TIME_VALID_AFTER = 1609459200;
-
 static SensorSnapshot snapshot_copy(void) {
   SensorSnapshot out = {0.0f, 0.0f, 0.0f, false, 0};
   if (snapshot_lock == NULL) {
@@ -57,19 +53,6 @@ void status_publish_sensors(float temperature_c, float humidity_pct, float press
   xSemaphoreGive(snapshot_lock);
 }
 
-static const char *time_source_name(bool time_valid) {
-  if (!time_valid) {
-    return "unset";
-  }
-  if (rtc_start == 1) {
-    return "rtc";
-  }
-  if (WiFi.status() == WL_CONNECTED) {
-    return "ntp";
-  }
-  return "unknown";
-}
-
 static void fmt_float(char *dst, size_t len, bool valid, float value, const char *missing) {
   if (valid) {
     snprintf(dst, len, "%.1f", value);
@@ -78,8 +61,8 @@ static void fmt_float(char *dst, size_t len, bool valid, float value, const char
   }
 }
 
-static void fmt_utc(char *dst, size_t len, bool time_valid, time_t now) {
-  if (!time_valid) {
+static void fmt_utc(char *dst, size_t len, bool valid, time_t now) {
+  if (!valid) {
     snprintf(dst, len, "null");
     return;
   }
@@ -93,25 +76,26 @@ static void fmt_utc(char *dst, size_t len, bool time_valid, time_t now) {
 static void handle_api_status(void) {
   SensorSnapshot s = snapshot_copy();
   time_t now = time(NULL);
-  bool time_valid = now > TIME_VALID_AFTER;
 
-  char temp[12], hum[12], pres[12], utc[32];
+  char temp[12], hum[12], pressure[12], utc[32];
   fmt_float(temp, sizeof(temp), s.valid, s.temperature_c, "null");
   fmt_float(hum, sizeof(hum), s.valid, s.humidity_pct, "null");
-  fmt_float(pres, sizeof(pres), s.valid, s.pressure_hpa, "null");
+  fmt_float(pressure, sizeof(pressure), s.valid, s.pressure_hpa, "null");
   fmt_utc(utc, sizeof(utc), time_valid, now);
 
-  char body[512];
+  char body[560];
   snprintf(body, sizeof(body),
            "{\"uptime_s\":%lu,\"temperature_c\":%s,\"humidity_pct\":%s,"
            "\"pressure_hpa\":%s,\"sensors_valid\":%s,\"sensor_age_ms\":%lu,"
-           "\"time_source\":\"%s\",\"time_valid\":%s,\"time_utc\":%s,"
+           "\"time_source\":\"%s\",\"time_valid\":%s,\"rtc_present\":%s,"
+           "\"time_utc\":%s,"
            "\"sd_ok\":%s,\"recording\":%s,\"sta_connected\":%s,"
            "\"sta_ip\":\"%s\",\"ap_ip\":\"%s\",\"ap_clients\":%u}\n",
-           (unsigned long)(millis() / 1000UL), temp, hum, pres,
+           (unsigned long)(millis() / 1000UL), temp, hum, pressure,
            s.valid ? "true" : "false",
            s.valid ? (unsigned long)(millis() - s.updated_ms) : 0UL,
-           time_source_name(time_valid), time_valid ? "true" : "false", utc,
+           time_source_name(), time_valid ? "true" : "false",
+           rtc_present ? "true" : "false", utc,
            sd_card == 1 ? "true" : "false", record_streams ? "true" : "false",
            WiFi.status() == WL_CONNECTED ? "true" : "false",
            WiFi.localIP().toString().c_str(), WiFi.softAPIP().toString().c_str(),
@@ -124,12 +108,11 @@ static void handle_api_status(void) {
 static void handle_root(void) {
   SensorSnapshot s = snapshot_copy();
   time_t now = time(NULL);
-  bool time_valid = now > TIME_VALID_AFTER;
 
-  char temp[12], hum[12], pres[12], age[16], clock[48];
+  char temp[12], hum[12], pressure[12], age[16], clock[48];
   fmt_float(temp, sizeof(temp), s.valid, s.temperature_c, "-");
   fmt_float(hum, sizeof(hum), s.valid, s.humidity_pct, "-");
-  fmt_float(pres, sizeof(pres), s.valid, s.pressure_hpa, "-");
+  fmt_float(pressure, sizeof(pressure), s.valid, s.pressure_hpa, "-");
   if (s.valid) {
     snprintf(age, sizeof(age), "%lu s", (unsigned long)((millis() - s.updated_ms) / 1000UL));
   } else {
@@ -140,7 +123,9 @@ static void handle_root(void) {
     gmtime_r(&now, &t);
     char iso[24];
     strftime(iso, sizeof(iso), "%Y-%m-%dT%H:%M:%SZ", &t);
-    snprintf(clock, sizeof(clock), "%s (%s)", iso, time_source_name(true));
+    snprintf(clock, sizeof(clock), "%s (%s)", iso, time_source_name());
+  } else if (time_source == TimeSource::Compile) {
+    snprintf(clock, sizeof(clock), "compile (approximate)");
   } else {
     snprintf(clock, sizeof(clock), "unset");
   }
@@ -159,11 +144,13 @@ static void handle_root(void) {
            "<tr><td>Pressure</td><td>%s hPa</td></tr>"
            "<tr><td>Reading age</td><td>%s</td></tr>"
            "<tr><td>Time</td><td>%s</td></tr>"
+           "<tr><td>RTC</td><td>%s</td></tr>"
            "<tr><td>SD card</td><td>%s</td></tr>"
            "<tr><td>Recording</td><td>%s</td></tr>"
            "<tr><td>Uptime</td><td>%lu s</td></tr>"
            "</table><p><a href=\"/api/status\">/api/status</a></p></body></html>\n",
-           temp, hum, pres, age, clock, sd_card == 1 ? "ok" : "unavailable",
+           temp, hum, pressure, age, clock, rtc_present ? "present" : "not fitted",
+           sd_card == 1 ? "ok" : "unavailable",
            record_streams ? "recording" : "idle", (unsigned long)(millis() / 1000UL));
 
   status_server.sendHeader("Cache-Control", "no-store");
@@ -175,8 +162,10 @@ static void handle_not_found(void) {
 }
 
 static void ap_start(void) {
-  WiFi.mode(WIFI_AP_STA);
 #if AP_ALWAYS_ON
+  // Start in AP+STA so the AP is up before init_time(); try_ntp() keeps this
+  // mode when it associates the STA for NTP.
+  WiFi.mode(WIFI_AP_STA);
   WiFi.softAPConfig(AP_ADDRESS, AP_ADDRESS, AP_MASK);
   if (WiFi.softAP(AP_SSID, AP_PASSWORD, AP_CHANNEL, 0, AP_MAX_CLIENTS)) {
     Serial.printf("[ap] \"%s\" up, channel %d, http://%s/\n", AP_SSID, AP_CHANNEL,

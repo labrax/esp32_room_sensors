@@ -13,11 +13,10 @@ This record resolves the findings in HS-2. Each finding is marked **confirmed**,
 rejected alternatives, and the deferrals. The backlog maps every approved item
 to a child ticket.
 
-> **Update 2026-11-04:** HS-12 requests a WiFi AP mode at boot. The "WiFi off
-> after boot" part of D2 and the "delete `WEBSERVER`" decision in D3 are
-> provisional pending HS-12. The rest of this record stands. HS-4 should keep
-> the WiFi policy pluggable so AP mode can be added without reworking the time
-> source logic.
+> **Update 2026-11-04:** HS-12 added a WiFi AP mode at boot. The "WiFi off
+> after boot" part of D2 and the "delete `WEBSERVER`" decision in D3 were
+> qualified by HS-12 and are implemented in section 5.1. The rest of this record
+> stands.
 
 No firmware, hardware, or case changes are made in HS-2. This document is the
 only repository change.
@@ -77,8 +76,9 @@ Keep five tasks. Do not add a storage queue yet.
 
 Rationale:
 
-- Audio must preempt on core 0 to drain the I2S DMA. Priority 3 is enough; the
-  WiFi task is off after boot.
+- Audio must preempt on core 0 to drain the I2S DMA. Priority 3 is enough; with
+  the HS-12 AP the WiFi task stays up, but it is light and the radio work is
+  mostly on the WiFi core.
 - Input gets priority 3 so a 30 ms debounce is not starved by sensor work.
 - Sensor and PIR stay separate: a BME/dust sample takes about 2 s, and merging
   PIR into it would delay a 1 s poll.
@@ -220,8 +220,10 @@ Worst case is about 30 s with a 25 s network budget. No path blocks forever.
   outside the range, treat it as invalid and try NTP. If NTP succeeds and an RTC
   is present, adjust the RTC.
 - **NTP:** call `configTime(0, 0, "pool.ntp.org")` only after a bounded connect.
-  Use `getLocalTime(&tm, 10000)`. Then `WiFi.mode(WIFI_OFF)`; no `btStop`.
-  Skip WiFi entirely if the credentials are still the example placeholders.
+  Use `getLocalTime(&tm, 10000)`. With `AP_ALWAYS_ON=0`, then
+  `WiFi.mode(WIFI_OFF)`; with the HS-12 AP, keep `WIFI_AP_STA` up (section 5.1).
+  No `btStop` here. Skip WiFi entirely if the credentials are still the example
+  placeholders.
 - **Compile fallback:** parse `__DATE__`/`__TIME__` as UTC and set the system
   clock. This gives ordered, plausible timestamps for an offline node, but they
   are approximate. `session.json` records `time_valid=false` so downstream
@@ -312,19 +314,20 @@ page stays deleted.
   fails the build if `AP_PASSWORD` is shorter than 8 characters.
 - **Endpoints:** `GET /` (HTML table, 5 s meta refresh) and `GET /api/status`
   (JSON: `uptime_s`, `temperature_c`, `humidity_pct`, `pressure_hpa`,
-  `sensors_valid`, `sensor_age_ms`, `time_source`, `time_valid`, `time_utc`,
-  `sd_ok`, `recording`, `sta_connected`, `sta_ip`, `ap_ip`, `ap_clients`).
-  Unknown paths return 404. No auth, no captive portal, no file listing.
+  `sensors_valid`, `sensor_age_ms`, `time_source`, `time_valid`, `rtc_present`,
+  `time_utc`, `sd_ok`, `recording`, `sta_connected`, `sta_ip`, `ap_ip`,
+  `ap_clients`). Unknown paths return 404. No auth, no captive portal, no file
+  listing.
 - **Ownership:** the sensor task publishes a `SensorSnapshot` under a mutex
   after each BME280 read; the handlers copy it and never touch I2C. A dedicated
   `status_server` task (core 1, priority 1, 8192 B) polls
   `server.handleClient()` every 10 ms, so a slow HTTP client cannot stall the
   loggers. The `loop()` delay and the SD restart path are unchanged.
-- **Boot order:** the AP starts right after `WiFi.begin()` and before
-  `rtc_prepare()`. `rtc_prepare()` blocks in `waitWifiLoop()` until the STA
-  associates (HS-4 bounds it), so starting the AP later would leave an AP-only
-  boot with no AP. AP-only time still comes from the HS-4 fallback; until that
-  lands, `time_source` is inferred from the epoch and the STA state.
+- **Boot order:** the AP starts in `setup()` before `init_time()`, so an
+  AP-only boot still has an AP while the bounded STA/NTP attempt runs.
+  `init_time()` uses `WIFI_AP_STA` and the HS-12 post-sync policy leaves the
+  radio on; AP-only time comes from the HS-4 RTC/compile fallback. The time and
+  status modules share the HS-4 `time_source`/`time_valid`/`rtc_present` API.
 - **Security:** WPA2-PSK, link-local only, no HTTP auth. Anyone who knows the
   PSK is on the same L2 network as the board. Acceptable while the page is
   read-only and the device is not exposed to the internet.
@@ -333,9 +336,8 @@ page stays deleted.
   1 h on the bench; if the offset exceeds about 0.5 °C, set `AP_ALWAYS_ON 0` and
   open a follow-up for a boot window. Until then, absolute temperature is
   indicative while the AP is on.
-- **Open:** HS-4 owns the real `time_source`/fallback API; HS-6 owns recording
-  state; HS-8 owns the SD/`loop()` rework. This module only reads `sd_card`,
-  `record_streams`, and `rtc_start`.
+- **Open:** HS-6 owns recording state; HS-8 owns the SD/`loop()` rework. This
+  module only reads `sd_card`, `record_streams`, and the HS-4 time globals.
 
 ---
 
@@ -655,8 +657,11 @@ Per-ticket gates are in the child tickets. The shared bench matrix:
 | Check | Gate |
 |---|---|
 | Offline boot, no AP, no RTC | Boots within 30 s; logs with `time_source=compile`; never `19000100` |
-| Valid RTC | Boots with `time_source=rtc`; no WiFi association |
-| Invalid RTC + AP | NTP within 25 s; RTC adjusted; `time_source=ntp` |
+| Valid RTC | Boots with `time_source=rtc`; no STA association (the HS-12 AP stays up); RTC adjusted only after NTP |
+| Invalid RTC + AP | NTP within 25 s; RTC adjusted; `time_source=ntp`; AP still reachable |
+| AP-only boot | SSID visible, WPA2, DHCP lease `192.168.4.x`; `/` and `/api/status`; `time_source=compile` or `rtc`, `time_valid` matches |
+| AP+STA | STA lease from the router; AP stays up after the time sync; `sta_connected`/`sta_ip` correct |
+| AP thermal | 1 h AP on vs off; BME280 bias documented; > 0.5 °C opens a follow-up |
 | 2 h audio + accel + CSV | No truncated CSV, no interleaved audio, no `sd_ok` flapping |
 | 10 min WAV | Playable 16 kHz mono; duration within 1 % |
 | Power cut during recording | WAV recoverable; no corrupt CSV header |

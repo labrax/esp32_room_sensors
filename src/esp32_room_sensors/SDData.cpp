@@ -1,5 +1,9 @@
 #include "SDData.h"
 
+#include "Mic.h"
+#include "accel.h"
+#include "sensors.h"
+
 int sd_card = 0;
 
 File data_output;
@@ -8,6 +12,16 @@ File data_pir_output;
 File data_audio_raw_output;
 File data_accel_output;
 int write_n;
+
+// "/<YYYYMMDD_HHMMSS><suffix>", with a numeric suffix on collision.
+static void build_unique_filename(char *buf, size_t len, const char *suffix) {
+  char ts[24];
+  format_filename_timestamp(ts, sizeof(ts));
+  snprintf(buf, len, "/%s%s", ts, suffix);
+  for (int i = 1; SD.exists(buf) && i <= 99; i++) {
+    snprintf(buf, len, "/%s_%d%s", ts, i, suffix);
+  }
+}
 
 void start_sd() {
   //sd card setup
@@ -34,7 +48,7 @@ void start_sd() {
     int cardSizeInMB = cardSize/(1024 * 1024);
     Serial.print("Card size: ");
     Serial.println(cardSizeInMB);
-    uint64_t bytesAvailable = SD.totalBytes(); 
+    uint64_t bytesAvailable = SD.totalBytes();
     int bytesAvailableInMB = bytesAvailable/(1024 * 1024);
     Serial.print("MB available: ");
     Serial.println(bytesAvailableInMB);
@@ -44,14 +58,13 @@ void start_sd() {
     Serial.println(bytesUsedInMB);
 
     //prepare files
-    tick_time_update();
-    char main_data_file[32];
-    char pir_data_file[32];
-    //char audio_data_file[32];
-    
-    sprintf(main_data_file, "/%04d%02d%02d_%02d%02d%02d_main_data.csv", current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
-    sprintf(pir_data_file, "/%04d%02d%02d_%02d%02d%02d_pir_data.csv", current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
-    //sprintf(audio_data_file, "/%04d%02d%02d_%02d%02d%02d_audio_data.csv", current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
+    char main_data_file[48];
+    char pir_data_file[48];
+    //char audio_data_file[48];
+
+    build_unique_filename(main_data_file, sizeof(main_data_file), "_main_data.csv");
+    build_unique_filename(pir_data_file, sizeof(pir_data_file), "_pir_data.csv");
+    //build_unique_filename(audio_data_file, sizeof(audio_data_file), "_audio_data.csv");
     Serial.printf("Output files are: %s and %s\n", main_data_file, pir_data_file);
     data_output = SD.open(main_data_file, FILE_WRITE);
     data_pir_output = SD.open(pir_data_file, FILE_WRITE);
@@ -88,8 +101,8 @@ void start_sd() {
 }
 
 void start_audio_file() {
-  char audio_wav_data_file[32];
-  sprintf(audio_wav_data_file, "/%04d%02d%02d_%02d%02d%02d_audio.raw", current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
+  char audio_wav_data_file[48];
+  build_unique_filename(audio_wav_data_file, sizeof(audio_wav_data_file), "_audio.raw");
   data_audio_raw_output = SD.open(audio_wav_data_file, FILE_WRITE);
   if(!data_audio_raw_output) {
     Serial.printf("Failed to open audio file: %s\n", audio_wav_data_file);
@@ -97,8 +110,8 @@ void start_audio_file() {
 }
 
 void start_accel_file() {
-  char accel_data_file[32];
-  sprintf(accel_data_file, "/%04d%02d%02d_%02d%02d%02d_accel.bin", current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
+  char accel_data_file[48];
+  build_unique_filename(accel_data_file, sizeof(accel_data_file), "_accel.bin");
   data_accel_output = SD.open(accel_data_file, FILE_WRITE);
   if(!data_accel_output) {
     Serial.printf("Failed to open accel file: %s\n", accel_data_file);
@@ -116,12 +129,68 @@ void close_accel_file() {
 }
 
 void time_to_file(File * f) {
-  tick_time_update();
-  Serial.printf("%04d%02d%02d,%02d:%02d:%02d,",  current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
+  char ts[24];
+  format_timestamp(ts, sizeof(ts));
+  Serial.printf("%s,", ts);
   if((f != NULL) & (sd_card == 1)) {
-    write_n = f->printf("%04d%02d%02d,%02d:%02d:%02d,",  current_tm->tm_year + 1900, current_tm->tm_mon + 1, current_tm->tm_mday, current_tm->tm_hour, current_tm->tm_min, current_tm->tm_sec);
+    write_n = f->printf("%s,", ts);
     if(!write_n) {
       sd_card = 0;
     }
   }
+}
+
+// One per boot: the authoritative record of whether this boot's timestamps are
+// trustworthy. Hand-formatted; no JSON dependency.
+void write_session_json() {
+  if(sd_card != 1) {
+    Serial.println("SD not mounted; session metadata skipped.");
+    return;
+  }
+
+  char path[64];
+  char boot_id[40];
+  build_unique_filename(path, sizeof(path), "_session.json");
+  format_boot_id(boot_id, sizeof(boot_id));
+
+  uint64_t total_bytes = SD.totalBytes();
+  uint64_t used_bytes = SD.usedBytes();
+  unsigned long total_mb = (unsigned long)(total_bytes / (1024ULL * 1024ULL));
+  unsigned long free_mb = (unsigned long)((total_bytes - used_bytes) / (1024ULL * 1024ULL));
+
+  char json[640];
+  int n = snprintf(json, sizeof(json),
+    "{\n"
+    "  \"fw_version\": \"%s\",\n"
+    "  \"git_sha\": \"unknown\",\n"
+    "  \"boot_id\": \"%s\",\n"
+    "  \"reset_reason\": \"%s\",\n"
+    "  \"time_source\": \"%s\",\n"
+    "  \"time_valid\": %s,\n"
+    "  \"sd_total_mb\": %lu,\n"
+    "  \"sd_free_mb\": %lu,\n"
+    "  \"sensors\": { \"bme280\": %s, \"mpu6050\": %s, \"mic\": %s, \"sd\": true },\n"
+    "  \"config\": { \"sensor_period_s\": %d, \"pir_period_s\": %d, \"audio_hz\": %d, \"accel_hz\": %d }\n"
+    "}\n",
+    FW_VERSION, boot_id, reset_reason_name(), time_source_name(),
+    time_valid ? "true" : "false",
+    total_mb, free_mb,
+    bme_present ? "true" : "false",
+    mpu_present ? "true" : "false",
+    audio_start == 1 ? "true" : "false",
+    SENSOR_TIC_SEC, SENSOR_PIR_TIC_SEC, I2S_SAMPLE_RATE, ACCEL_FREQ);
+
+  if(n < 0 || n >= (int)sizeof(json)) {
+    Serial.println("Session metadata truncated; skipping.");
+    return;
+  }
+
+  File f = SD.open(path, FILE_WRITE);
+  if(!f) {
+    Serial.printf("Failed to open session file: %s\n", path);
+    return;
+  }
+  f.print(json);
+  f.close();
+  Serial.printf("Session metadata: %s\n", path);
 }

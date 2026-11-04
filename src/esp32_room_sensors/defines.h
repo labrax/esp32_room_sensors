@@ -53,7 +53,15 @@ extern unsigned char record_streams; // store information if the mic / gps data 
 //accel define
 #define ACCEL_FREQ 10 // Hz
 
-#define SKIP_RTC true
+//firmware identity
+#define FW_VERSION "0.2.0"
+
+//time sources (see docs/architecture.md D2)
+#define WIFI_CONNECT_TIMEOUT_MS 15000UL
+#define NTP_SYNC_TIMEOUT_MS 10000UL
+#define RTC_REREAD_INTERVAL_MS 3600000UL
+#define RTC_MIN_YEAR 2024
+#define RTC_MAX_YEAR 2100
 
 #define FLASH_RECORD_SIZE (I2S_CHANNEL_NUM * I2S_SAMPLE_RATE * I2S_SAMPLE_BITS / 8 * RECORD_TIME)
 
