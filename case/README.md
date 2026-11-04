@@ -1,7 +1,7 @@
 # ESP32 multiple-IO case
 
 3D-printable case for the 75 x 64 mm PCB in
-`Gerber_ESP32-multiple-IO_PCB_20210624_2026-11-02.zip`.
+`../pcb/source/Gerber_ESP32-multiple-IO_PCB_20210624_2026-11-02.zip`.
 
 ![case preview](esp32_case_preview.png)
 

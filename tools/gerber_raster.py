@@ -138,17 +138,17 @@ def render_board(out, layers):
     print("wrote", out)
 
 if __name__ == "__main__":
-    import sys
-    base = "/home/vroth/esp32-v1337-all-in-one/pcb/"
+    from pathlib import Path
+    base = Path(__file__).resolve().parent.parent / "pcb"
     render_board("/tmp/opencode/board.png", [
-        (base + "Gerber_TopLayer.GTL", (220, 0, 0, 120), 5),
-        (base + "Gerber_TopSolderMaskLayer.GTS", (255, 180, 0, 200), 5),
-        (base + "Gerber_TopSilkscreenLayer.GTO", (0, 0, 0, 255), 5),
-        (base + "Gerber_BoardOutlineLayer.GKO", (0, 0, 255, 255), 5),
+        (base / "Gerber_TopLayer.GTL", (220, 0, 0, 120), 5),
+        (base / "Gerber_TopSolderMaskLayer.GTS", (255, 180, 0, 200), 5),
+        (base / "Gerber_TopSilkscreenLayer.GTO", (0, 0, 0, 255), 5),
+        (base / "Gerber_BoardOutlineLayer.GKO", (0, 0, 255, 255), 5),
     ])
     render_board("/tmp/opencode/board_bottom.png", [
-        (base + "Gerber_BottomLayer.GBL", (0, 100, 220, 120), 5),
-        (base + "Gerber_BottomSolderMaskLayer.GBS", (255, 180, 0, 200), 5),
-        (base + "Gerber_BottomSilkscreenLayer.GBO", (0, 0, 0, 255), 5),
-        (base + "Gerber_BoardOutlineLayer.GKO", (0, 0, 255, 255), 5),
+        (base / "Gerber_BottomLayer.GBL", (0, 100, 220, 120), 5),
+        (base / "Gerber_BottomSolderMaskLayer.GBS", (255, 180, 0, 200), 5),
+        (base / "Gerber_BottomSilkscreenLayer.GBO", (0, 0, 0, 255), 5),
+        (base / "Gerber_BoardOutlineLayer.GKO", (0, 0, 255, 255), 5),
     ])
