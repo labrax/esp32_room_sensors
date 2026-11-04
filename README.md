@@ -14,8 +14,9 @@ readings.
 | `src/esp32_room_sensors/` | Arduino sketch and firmware sources |
 | `case/` | Parametric OpenSCAD case, STLs, previews; see [`case/README.md`](case/README.md) |
 | `pcb/` | Gerber/drill files and source archive; see [`pcb/README.md`](pcb/README.md) |
-| `tools/` | Gerber preview/raster helpers, microphone comparison and sweep generator |
+| `tools/` | Gerber preview/raster, microphone comparison, sweep generator, serial WAV capture |
 | `test/mic_case/` | Standalone INMP441 + SD WAV recorder for the HS-3 bench test |
+| `test/mic_case_serial/` | Standalone INMP441 serial WAV recorder for HS-3 (no SD) |
 
 ## Firmware
 

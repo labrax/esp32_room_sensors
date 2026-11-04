@@ -52,11 +52,11 @@ Follow `test/mic_case/README.md`:
 | I2S SCK | GPIO14 |
 | I2S WS | GPIO15 |
 | I2S SD (mic data) | GPIO4 |
-| SD CS | GPIO5 |
+| SD CS | GPIO5 (SD path only; unused in serial mode) |
 | Record button | GPIO13 -> 3V3 (active high) |
 | Status LED | GPIO2 |
 
-INMP441 VDD **3.3 V**, L/R to GND (left channel), common ground.
+INMP441 VDD **3.3 V**, common ground. L/R is board-dependent: the project board ties it high, so the test sketches record the **right** channel. If your module ties L/R low, change `ONLY_RIGHT` to `ONLY_LEFT` in the sketch.
 
 Flash and start the serial monitor:
 
@@ -66,8 +66,30 @@ arduino-cli upload --fqbn esp32:esp32:esp32 -p /dev/ttyUSB0 test/mic_case
 arduino-cli monitor -p /dev/ttyUSB0 -c baudrate=115200
 ```
 
-Each recording is 10 s at 32 kHz / 16-bit mono. The sketch writes
+Each recording is 10 s at 32 kHz / 16-bit mono. The SD sketch writes
 `/mic_000.wav`, `/mic_001.wav`, ... and prints the file name, peak, and RMS.
+See `test/mic_case/README.md`.
+
+### Serial capture (no SD)
+
+If no SD card is available, use the independent serial sketch instead:
+
+```sh
+arduino-cli compile --fqbn esp32:esp32:esp32 test/mic_case_serial
+arduino-cli upload --fqbn esp32:esp32:esp32 -p /dev/ttyUSB0 test/mic_case_serial
+
+# Host capture, 921600 baud:
+python3 tools/serial_wav.py --port /dev/ttyUSB0 --out /tmp/opencode/hs3_serial/A1.wav
+# three repeats without changing the setup:
+python3 tools/serial_wav.py --port /dev/ttyUSB0 --out /tmp/opencode/hs3_serial/A --count 3
+```
+
+The sketch prints `HSA_READY` every 2 s while idle. The host sends `S`; the
+device replies with a header and 10 s of PCM. The script waits for a 1 s
+pre-roll and prints `Recording ... start playback now`; start the sweep at that
+line. No SD card is used. The serial link must stay connected, and no text is
+printed during the PCM stream. UART is adequate for this relative A/B test;
+SD is more robust for long logs. See `test/mic_case_serial/README.md`.
 
 ## 4. Bench setup
 

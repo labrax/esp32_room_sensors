@@ -5,7 +5,7 @@ Standalone ESP32 sketch for the HS-3 case test: records the INMP441 to a
 main-firmware sources. Pins match `../../src/esp32_room_sensors/defines.h`.
 
 - Sample rate: **32 kHz**, 16-bit mono PCM
-- I2S: master RX, 32-bit slots, left channel (INMP441 L/R tied to GND)
+- I2S: master RX, 32-bit slots, right channel (the project board ties INMP441 L/R high; the main firmware comment also notes right)
 - Files: `/mic_000.wav`, `/mic_001.wav`, ... (existing names are skipped)
 - One recording starts 3 s after boot; the button starts another
 
@@ -15,7 +15,7 @@ main-firmware sources. Pins match `../../src/esp32_room_sensors/defines.h`.
 |---|---|---|
 | VDD | 3V3 | **3.3 V only** |
 | GND | GND | |
-| L/R | GND | selects the left channel |
+| L/R | board-dependent | project board ties it high → right channel; if your module ties it low, change `ONLY_RIGHT` to `ONLY_LEFT` |
 | SCK | GPIO14 | I2S bit clock |
 | WS | GPIO15 | I2S word select |
 | SD | GPIO4 | I2S data from the mic |

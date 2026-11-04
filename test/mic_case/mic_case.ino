@@ -62,7 +62,7 @@ static bool i2s_start() {
       .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = SAMPLE_RATE,
       .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
-      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,  // INMP441 L/R tied low
+      .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,  // board ties L/R high; main firmware notes right
       .communication_format =
           (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
