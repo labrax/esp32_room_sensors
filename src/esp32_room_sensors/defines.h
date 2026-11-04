@@ -19,7 +19,7 @@ extern unsigned char record_streams; // store information if the mic / gps data 
 #define SENSOR_PIR_TIC_SEC 1
 
 //audio defines
-#include <FreeRTOS.h>
+#include <freertos/FreeRTOS.h>
 #include <driver/i2s.h>
 #define STREAMS_ENABLE_DISABLE_PIN 13
 #define I2S_SCK 14 // ports

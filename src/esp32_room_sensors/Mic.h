@@ -1,9 +1,8 @@
 #ifndef MIC_H
 #define MIC_H
 
-#include <FreeRTOS.h>
+#include <freertos/FreeRTOS.h>
 #include <driver/i2s.h> //mic: INMP441
-#include <arduinoFFT.h> //mic: INMP441
 //#include "MicAux.h"
 #include "defines.h"
 #include "SDData.h"
