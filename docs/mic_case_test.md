@@ -345,3 +345,24 @@ module/port mounting. **E (tube) is the decisive test.** Adding side vents is
 not supported by D; taping the existing side vents did not flatten the notch.
 
 Analysis: `/tmp/opencode/hs3_serial/compare_abcd.md` and `compare_abcd.csv`.
+
+### 1.25 kHz notch — cavity depth mode
+
+The 1/24-octave data puts the notch at **~1.17–1.47 kHz** (deepest 1.307 kHz)
+with a harmonic at **2.614 kHz**. The case inner depth is **67 mm**:
+
+- quarter-wave: `343 / (4 × 0.067) = 1.28 kHz`
+- half-wave: `343 / (2 × 0.067) = 2.56 kHz`
+
+The measured 1.31/2.61 kHz matches the depth mode. The width (78 mm) gives
+1.10/2.20 kHz, and the height (21 mm) gives 4.08/8.17 kHz; the 3.84/5.12 kHz
+depth harmonics and the 4.08 kHz height mode line up with the 4–5 kHz features.
+A (lid off) is clean; C (hole sealed) and D (vents taped) do not remove the
+notch, so this is the enclosed lid cavity depth mode — not the 4 mm hole and
+not the VACG vents.
+
+A 16 mm tube from the mic port to the lid hole bypasses this cavity. A no-print
+equivalent is a **4 mm ID aquarium/silicone tube** (16 mm, foam ring at the
+port); **open-cell foam** filling the lid (clear of the hole and port) is the
+other damping test. The printed `mic_tube` is not required for the first E
+check.
