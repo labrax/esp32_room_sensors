@@ -15,7 +15,7 @@ Determine whether the closed case changes the microphone level or frequency
 response in a way that matters for voice/level detection. Compare these
 configurations with the same microphone, speaker, and positions:
 
-- module out of the case (baseline),
+- lid off, PCB/module left in the base (baseline),
 - lid on with the 4 mm MIC1 hole open,
 - lid on with the hole taped,
 - existing case vents open vs taped,
