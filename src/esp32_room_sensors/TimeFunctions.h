@@ -17,6 +17,10 @@ extern bool rtc_present;
 extern TimeSource time_source;
 extern bool time_valid;
 
+// True when an MPU6050 answers at 0x68 (WHO_AM_I == 0x68). The DS3231 shares
+// that address, so the RTC probe must not run when this is true.
+bool mpu6050_present_at_0x68();
+
 // Boot sequence: probe RTC, fall back to bounded NTP, then compile time.
 void init_time();
 // Re-read the RTC when it is the active source (called periodically).

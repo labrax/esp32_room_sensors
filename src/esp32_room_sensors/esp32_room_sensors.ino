@@ -193,8 +193,7 @@ void setup() {
   bme_present = bme.begin(0x76);
   Serial.printf("BME280: %s\n", bme_present ? "present" : "missing");
 
-  Wire.beginTransmission(0x68);
-  mpu_present = (Wire.endTransmission() == 0);
+  mpu_present = mpu6050_present_at_0x68();
   if(mpu_present) {
     mpu.Initialize();
   }

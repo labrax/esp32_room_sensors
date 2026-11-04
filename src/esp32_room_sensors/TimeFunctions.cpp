@@ -1,5 +1,6 @@
 #include "TimeFunctions.h"
 
+#include <Wire.h>
 #include <esp_system.h>
 #include <string.h>
 #include <time.h>
@@ -141,21 +142,44 @@ static bool try_ntp() {
   return synced;
 }
 
+// The MPU6050 and the DS3231 both answer at 0x68. Read the MPU WHO_AM_I
+// register first; if it answers with an MPU-family ID, the RTC probe must not
+// touch the bus. Known IDs include 0x68 (MPU6050), 0x70/0x71/0x73
+// (MPU6500/MPU9250), and clone-specific values such as 0x98. A DS3231 does not
+// implement register 0x75; a read there returns 0x00 or 0xFF.
+bool mpu6050_present_at_0x68() {
+  Wire.beginTransmission(0x68);
+  Wire.write(0x75); // WHO_AM_I
+  if (Wire.endTransmission(false) != 0) {
+    return false;
+  }
+  if (Wire.requestFrom(0x68, 1) != 1) {
+    return false;
+  }
+  uint8_t who = Wire.read();
+  return who != 0x00 && who != 0xFF;
+}
+
 void init_time() {
   setenv("TZ", "UTC0", 1);
   tzset();
 
   bool rtc_lost_power = false;
-  rtc_present = rtc.begin();
-  if (!rtc_present) {
-    Serial.println("RTC not found.");
+  if (mpu6050_present_at_0x68()) {
+    rtc_present = false;
+    Serial.println("MPU6050 at 0x68; RTC probe skipped (I2C address conflict).");
   } else {
-    rtc_lost_power = rtc.lostPower();
-    DateTime now = rtc.now();
-    Serial.printf("RTC time: %04d%02d%02d,%02d:%02d:%02d%s\n",
-                  now.year(), now.month(), now.day(),
-                  now.hour(), now.minute(), now.second(),
-                  rtc_lost_power ? " (lost power)" : "");
+    rtc_present = rtc.begin();
+    if (!rtc_present) {
+      Serial.println("RTC not found.");
+    } else {
+      rtc_lost_power = rtc.lostPower();
+      DateTime now = rtc.now();
+      Serial.printf("RTC time: %04d%02d%02d,%02d:%02d:%02d%s\n",
+                    now.year(), now.month(), now.day(),
+                    now.hour(), now.minute(), now.second(),
+                    rtc_lost_power ? " (lost power)" : "");
+    }
   }
 
   if (rtc_present && !rtc_lost_power && rtc_time_in_range(rtc.now())) {
