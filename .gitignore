@@ -7,3 +7,7 @@ build/
 # BEGIN oh-my-opencode-slim worktrees
 .slim/worktrees/
 # END oh-my-opencode-slim worktrees
+
+# BEGIN oh-my-opencode-slim worktrees
+.slim/worktrees/
+# END oh-my-opencode-slim worktrees

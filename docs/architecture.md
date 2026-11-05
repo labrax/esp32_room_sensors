@@ -55,7 +55,7 @@ against the source; corrections are called out.
 | Low | Case docs (`part=`) | **Confirmed** | `esp32_case.scad:6` lists only `base, lid, lid_pir, plunger, assembly, assembly_pir`, but the output block at `:389-419` also supports `base_501, lid_501, pir501_cover, assembly_501, none`. `case/README.md` never names `part=`; `:74-75` only mentions `front_ext`. |
 | Low | Case docs (`front_ext`) | **Confirmed — wording only** | `esp32_case.scad:66` sets `lid_screw_y = front_ext > 0 ? [-15, 45] : [15, 45]`. The front lid-screw pair and its base boss (both use this list) move 30 mm forward in the extended version. `case/README.md:63` says "the four screw bosses stay" and `:72` says "Screws: unchanged ... original boss positions"; both are wrong for the front pair. The boss exists; the review's "no boss" claim was the error. |
 | Low | Repo/assets | **Confirmed, duplicate corrected** | The STLs are ASCII (`file` reports "ASCII text"); the total is about 12.9 MB. `esp32_case_lid_501.stl` and `esp32_case_lid.stl` have the same facet count and bounding box but different bytes (different triangulation/export), and the SCAD maps `lid_501` to the same `lid(false)` module. They are functionally duplicate, not byte-identical; keeping both invites drift. Same for `_ext`. There is no `LICENSE`, no CI, and no `tools/README.md`; `gerber_raster.py` hardcodes `/tmp/opencode` output. |
-| — | MIC1 | **Confirmed, scope narrowed** | The INMP441 port is top-facing and aligned with the 4 mm lid hole. The open item is the roughly 16 mm cavity between the port and the lid, not the hole purpose. HS-3 measures the acoustic effect and decides between leave-as-is, gasket/tube, vents, and mesh. HS-2 records the options and does not pre-empt the measurement. |
+| — | MIC1 | **Confirmed, scope narrowed** | The INMP441 port is top-facing and aligned with the 4 mm lid hole. The open item is the measured ~8.6 mm cavity between the port and the lid (12.4 mm module top), not the hole purpose. HS-3 measures the acoustic effect and decides between leave-as-is, gasket/tube, vents, and mesh. HS-2 records the options and does not pre-empt the measurement. |
 
 ---
 
@@ -529,7 +529,7 @@ change.
 ### 9.3 MIC1 acoustic note
 
 The INMP441 port faces up and is aligned with the 4 mm lid hole. There is about
-16 mm of air between the port and the lid (measure the actual module/header
+8.6 mm of air between the port and the lid (12.4 mm module top; measure the actual module/header
 height). That cavity can color the response and create a resonance; the case is
 not acoustically transparent.
 
@@ -537,10 +537,20 @@ Document these options in `case/README.md`:
 
 1. **Gasket/cup (recommended if acoustic data matters).** A soft foam ring
    around the port and a short, wide cup to the lid hole. Avoid a narrow
-   4 mm x 16 mm tube: a quarter-wave resonance near 5.4 kHz colors the band.
+   4 mm x 8.6 mm tube for voice/ASR: it leaves a residual 1.25 kHz notch and a
+   quarter-wave resonance near 10 kHz.
 2. **Dust mesh.** An acoustic mesh over the 4 mm hole keeps dust out; measure
    the high-frequency attenuation.
 3. **Leave as-is.** Acceptable for voice/level monitoring; calibrate in situ.
+
+**HS-3 decision (2026-11-04):** use the 8.6 mm tube for background-noise
+recording (trains/road/snoring). The standard lid now carries the tube
+integrated into the lid; the separate `esp32_case_mic_tube.stl` is a
+test/alternative part and must not be used with the integrated lid. The tube
+restores the overall level and reduces the 1.25 kHz notch, but leaves a ~−7 dB
+residual notch and an 8–10 kHz tube resonance. This is not a measurement-grade
+or voice/ASR port; F (tube + mesh) and the 8.0 mm tube were not run. The main
+firmware INMP441 channel is flagged on HS-7.
 4. **Side vents.** Keep the existing VACG side vents for airflow. HS-3 tests
    their acoustic effect if a prototype is available; do not remove them for
    the microphone.

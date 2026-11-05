@@ -20,6 +20,7 @@
 | `esp32_case_lid_501_ext.stl` | HC-SR501 lid + 30 mm front cable extension |
 | `esp32_case_lid_pir_ext.stl` | Mini-PIR lid + 30 mm front cable extension |
 | `esp32_case_pir501_cover.stl` | Removable ceiling/cover for the HC-SR501 bay |
+| `esp32_case_mic_tube.stl` | MIC1 acoustic port tube (HS-3): 4 mm ID, 8.6 mm long, 10 mm flanges |
 | `esp32_case_lid_pir.stl` | Lid with 13 x 13.4 mm mini-PIR window |
 | `esp32_case_plunger.stl` | Optional KEY1 button cap |
 | `esp32_case_preview.png` | Standard case preview with PCB mock-up |
@@ -29,17 +30,48 @@
 | `esp32_case_ext_preview.png` | Standard +30 mm extension preview |
 | `esp32_case_501_ext_preview.png` | HC-SR501 +30 mm extension preview |
 
+## Exporting
+
+`esp32_case.scad` selects one part with `-D part="..."`:
+
+| `part` | Geometry |
+|---|---|
+| `base` | Standard base tray |
+| `base_501` | Base with the HC-SR501 bay |
+| `lid` / `lid_501` | Standard lid (no mini-PIR window) |
+| `lid_pir` | Lid with the 13 x 13.4 mm mini-PIR window |
+| `plunger` | KEY1 button cap |
+| `pir501_cover` | HC-SR501 bay cover |
+| `mic_tube` | MIC1 acoustic port tube (4 mm ID, 8.6 mm) |
+| `assembly`, `assembly_pir`, `assembly_501` | Preview only, not exported |
+| `none` | No top-level geometry (used by the joint-check wrapper) |
+
+```sh
+openscad -o esp32_case_base.stl -D 'part="base"' esp32_case.scad
+openscad -o esp32_case_lid.stl -D 'part="lid"' esp32_case.scad
+openscad -o esp32_case_mic_tube.stl -D 'part="mic_tube"' esp32_case.scad
+```
+
+The extension variants add `-D front_ext=30`. The MIC1 tube length is
+`mic_tube_len` (default 8.6 mm, flanges included); for a shorter tube:
+
+```sh
+openscad -o /tmp/mic_tube_80.stl -D 'part="mic_tube"' -D mic_tube_len=8.0 esp32_case.scad
+```
+
 ## Dimensions
 
-- Standard case: **82.8 x 71.8 x 32.3 mm**
-- Standard +30 mm extension: **82.8 x 101.8 x 32.3 mm**
-- HC-SR501 version: **83.4 x 98.4 x 32.3 mm** (bay included)
-- HC-SR501 +30 mm extension: **83.4 x 128.4 x 32.3 mm**
+- Standard case: **86.8 x 71.8 x 32.3 mm**
+- Standard +30 mm extension: **86.8 x 101.8 x 32.3 mm**
+- HC-SR501 version: **87.4 x 98.4 x 32.3 mm** (bay included)
+- HC-SR501 +30 mm extension: **87.4 x 128.4 x 32.3 mm**
 - PCB position: bottom at **z = 8.1 mm**
 - Bottom clearance: **6.5 mm** (PCB bottom to inner floor)
 - Top clearance: **21 mm** (20 mm requested + 1 mm margin)
-- PCB: 75 x 64 x 1.6 mm, **2.2 mm clearance to the case walls**; the
-  lid-screw holes sit just outside the PCB edge
+- PCB: 75 x 64 x 1.6 mm, **4.2 mm side clearance** (2.2 mm front/back); the
+  lid-screw bosses clear the PCB edge by 1.6 mm
+- Width increased **2 mm on each side** (4 mm total) compared with the
+  previous version; the PCB and board screws stay at their original positions.
 - Board screws: **4x M2 x 8 mm**, 1.85 mm pilot holes 6.5 mm deep with a
   2.25 mm lead-in, in 8 x 8 mm corner bosses
 - Lid joint: **external rabbet, base inner lip raised**. The base rim has a
@@ -49,8 +81,12 @@
   clear of the base lip. The outer surfaces are flush; the visible seam is the
   bottom edge of the lid skirt.
 - Plus **4x M2x20 lid screws** inserted from under the base on all versions.
-  Heads recessed, lid top clean; the screws are at x = 1.9 / 79.3 mm and sit
-  just outside the PCB edge
+  Heads recessed, lid top clean; the four screws are at the corners, **2.4 mm
+  from the side walls and 3.55 mm from the front/back walls** (x = -0.4 /
+  81.6 mm; y = 2.75 / 67.45 mm standard, -27.25 / 67.45 mm +30). Their bosses
+  clear the PCB edge by 1.6 mm. The base posts run full height from the floor
+  to the rim, beside the PCB corner bosses. Local bottom pads keep the recessed
+  heads supported at the chamfer.
 - Walls / floor / lid top: **1.6 mm**
 - External corners: **R4**, top/bottom outer edges chamfered **1 mm**
 
@@ -81,8 +117,12 @@ length is an empty cable compartment in front of the board.
 - **Base:** print as oriented, open side up. No supports.
 - **Base 501:** print as oriented; the PIR bay is open at the top. No supports.
 - **Lid:** print as oriented. The STL is already flipped so the top face is on
-  the bed and the open side is up. No supports.
+  the bed and the open side is up. No supports. The standard lid STL includes
+  the integrated 8.6 mm MIC1 tube; clear the 4 mm bore after printing.
 - **Plunger:** print as oriented, base plate on the bed. No supports.
+- **MIC1 acoustic port tube (separate test part):** print as oriented, one 10 mm
+  flange on the bed and the 4 mm bore vertical. No supports. 1.2 mm wall,
+  3 perimeters. Not needed with the standard lid, which already has the tube.
 
 ## Assembly
 
@@ -94,9 +134,11 @@ length is an empty cable compartment in front of the board.
    cap stays above the lid.
 4. Press the lid on; the lid outer skirt drops onto the base shelf and the lid
    inner wall seats on the raised base lip.
-5. Insert the **M2x20 lid screws** from under the base into the lid posts and
+5. Fit a soft foam ring around the INMP441 port; the standard lid's integrated
+   8.6 mm tube should sit on the foam without pressing on the 0.25 mm port.
+6. Insert the **M2x20 lid screws** from under the base into the lid posts and
    tighten. The heads sit in the bottom counterbores.
-6. To open, remove the lid screws, then pry gently at the PHR side window, the
+7. To open, remove the lid screws, then pry gently at the PHR side window, the
    USB hole, or the VACG side vents.
 
 The PCB mounting holes are 2.032 mm, so M2 screws pass through. If the printed
@@ -111,11 +153,14 @@ tape to the lid skirt; if it is tight, sand the skirt lightly.
 |---|---|
 | **KEY1** | 14 mm top opening + optional plunger |
 | **PHR** | 5 mm top light hole + 12 x 10 mm left-side window (lid-only, from the seam) |
-| **MIC1** | 4 mm top sound hole |
+| **MIC1** | 4 mm top sound hole + 4 mm ID x 8.6 mm acoustic tube (1.2 mm wall) |
 | **VACG1 … VCAG2** | 5x 8 x 2 mm top slots + 3x 3 x 10 mm right-side slots (lid-only, starting at the seam) |
 | **USB / U3 wire** | 4 mm hole in the front wall, split between base and lid |
 | **Mini PIR (optional)** | 13 x 13.4 mm front window, `esp32_case_lid_pir.stl` |
 | **HC-SR501 (optional)** | 25 mm lens hole in the `base_501` front bay + removable cover |
+
+The MIC1 acoustic tube hangs **8.6 mm** below the lid inner face, with a
+**4 mm ID** and **1.2 mm wall** (6.4 mm OD).
 
 The USB hole is sized for a **3.2 mm cable**, not a USB plug. It is centred at
 `x = 39.44 mm` on the U3/USB centreline and is split at the base/lid seam.
@@ -155,7 +200,7 @@ across the ventilation openings.
   ground. The output is normally 3.3 V logic — measure it once; if your unit
   outputs 5 V, add a divider.
 - The bay is on the front-right; the 4 mm USB/U3 wire hole remains to its left.
-  The base with the bay is **83.4 x 98.4 mm**; the cover is 37.6 x 27.4 mm and
+  The base with the bay is **87.4 x 98.4 mm**; the cover is 37.6 x 27.4 mm and
   adds about 1 mm at the front and sides.
 
 ## Notes / checks
@@ -167,6 +212,7 @@ across the ventilation openings.
 - **Which hole is which:**
   - **4 mm front hole** — U3/USB wire pass-through.
   - **5 mm top hole near the front-left** — PHR light hole.
+  - **4 mm top hole with tube** — MIC1 / INMP441 acoustic tube.
   - **13 x 13.4 mm front window** — mini PIR only (`esp32_case_lid_pir.stl`).
   - **25 mm front hole** — HC-SR501 lens, in the `base_501` bay.
   The HC-SR501 lid (`esp32_case_lid_501.stl`) has no mini-PIR window; do not use
@@ -177,6 +223,12 @@ across the ventilation openings.
 - **SD cards:** the two SD-card headers are inside the front-right of the case.
   Remove the lid to insert or remove cards. The front wall is solid; add slots
   if you need external card access.
+- **MIC1:** the standard lid includes the integrated 8.6 mm acoustic tube
+  (4 mm ID, 1.2 mm wall). `esp32_case_mic_tube.stl` is a separate test/alternative
+  part; do not use it together with the integrated lid. The selected configuration
+  for background-noise use has a residual 1.25 kHz notch and an 8–10 kHz tube
+  resonance; add a mesh/windscreen for dust and wind. See
+  [`../docs/mic_case_test.md`](../docs/mic_case_test.md).
 - The case is designed for a 1.6 mm PCB. A 2.0 mm PCB reduces the top clearance
   by 0.4 mm and the M2x8 engagement by 0.4 mm.
 - All dimensions are in millimetres.

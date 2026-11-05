@@ -14,7 +14,9 @@ JSON API expose the readings.
 | `src/esp32_room_sensors/` | Arduino sketch and firmware sources |
 | `case/` | Parametric OpenSCAD case, STLs, previews; see [`case/README.md`](case/README.md) |
 | `pcb/` | Gerber/drill files and source archive; see [`pcb/README.md`](pcb/README.md) |
-| `tools/` | Gerber preview/raster helpers |
+| `tools/` | Gerber preview/raster, microphone comparison, sweep generator, serial WAV capture |
+| `test/mic_case/` | Standalone INMP441 + SD WAV recorder for the HS-3 bench test |
+| `test/mic_case_serial/` | Standalone INMP441 serial WAV recorder for HS-3 (no SD) |
 
 ## Firmware
 
@@ -42,6 +44,9 @@ it on the AP or the LAN can change the network. `GET /api/status` is the JSON vi
 
 - **Case:** [`case/README.md`](case/README.md) covers dimensions, printing,
   assembly, sensor openings, and the PIR variants.
+- **Microphone bench test:** [`docs/mic_case_test.md`](docs/mic_case_test.md)
+  is the HS-3 protocol for measuring the INMP441 with and without the lid.
+  The standalone recorder is in [`test/mic_case/`](test/mic_case/README.md).
 - **PCB:** [`pcb/README.md`](pcb/README.md) covers the Gerber/drill files and
   the EasyEDA order note.
 - The case was fitted to the PCB outline, mounting holes, and component

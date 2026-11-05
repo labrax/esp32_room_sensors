@@ -13,13 +13,18 @@ env:
 jobs:
   firmware:
     name: Firmware build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: arduino/setup-arduino-cli@v2
-        with:
-          version: 1.5.1
+      # Pinned manual install: arduino/setup-arduino-cli@v2 still targets node20
+      # and has no node24 release.
+      - name: Install Arduino CLI
+        run: |
+          curl -fsSL -o /tmp/arduino-cli.tar.gz https://downloads.arduino.cc/arduino-cli/arduino-cli_1.5.1_Linux_64bit.tar.gz
+          tar -xzf /tmp/arduino-cli.tar.gz -C /tmp arduino-cli
+          sudo install -m 0755 /tmp/arduino-cli /usr/local/bin/arduino-cli
+          arduino-cli version
 
       # esptool.py (invoked by the ESP32 core during compile) imports pyserial.
       - name: Install esptool host dependency
@@ -28,7 +33,7 @@ jobs:
           sudo apt-get install -y python3-serial
 
       - name: Cache Arduino core and libraries
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.arduino15
@@ -58,9 +63,9 @@ jobs:
 
   guards:
     name: Repo guards
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Ignored files must not be tracked
         run: |
@@ -71,7 +76,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
