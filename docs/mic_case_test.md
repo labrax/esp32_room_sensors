@@ -363,6 +363,13 @@ not the VACG vents.
 
 A 16 mm tube from the mic port to the lid hole bypasses this cavity. A no-print
 equivalent is a **4 mm ID aquarium/silicone tube** (16 mm, foam ring at the
-port); **open-cell foam** filling the lid (clear of the hole and port) is the
-other damping test. The printed `mic_tube` is not required for the first E
-check.
+port). If that is unavailable, any of these work for the first E check:
+
+- a **drinking straw** (≈5 mm ID), cut to ≈16 mm; butt its top against the
+  inside of the 4 mm lid hole and seal with foam/tape;
+- a **rolled card/paper tube**, 4–5 mm ID × 16 mm, taped;
+- a **Blu-Tack tube** moulded around a 4 mm mandrel (pen refill/drill bit),
+  mandrel removed; keep it off the 0.25 mm mic port.
+
+**Open-cell foam** filling the lid (clear of the hole and port) is the other
+damping test. The printed `mic_tube` is not required for the first E check.
