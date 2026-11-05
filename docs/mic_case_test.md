@@ -19,7 +19,7 @@ configurations with the same microphone, speaker, and positions:
 - lid on with the 4 mm MIC1 hole open,
 - lid on with the hole taped,
 - existing case vents open vs taped,
-- a 4 mm ID tube in the ~16 mm gap between the module port and the lid hole,
+- a 4 mm ID tube in the ~8.6 mm gap between the module port and the lid hole (12.4 mm module top),
 - acoustic dust mesh over the hole,
 - a side-vent prototype only if one is already printed.
 
@@ -36,7 +36,7 @@ changes, production case redesign, and implementing side vents.
   through the same speaker. A small full-range speaker is enough.
 - Player for WAV files (phone or PC), with the volume locked.
 - Ruler/tape measure, tape, marker, tripod or fixed supports.
-- 4 mm ID tube: printed `case/esp32_case_mic_tube.stl` (16 mm long) plus a
+- 4 mm ID tube: printed `case/esp32_case_mic_tube.stl` (8.6 mm long) plus a
   soft foam ring at the module port.
 - Acoustic dust mesh (thin polyester/metal mesh), tape.
 - Calipers (record the actual module-to-lid gap).
@@ -100,7 +100,7 @@ SD is more robust for long logs. See `test/mic_case_serial/README.md`.
 3. Remove nearby reflectors (monitor, metal parts). Turn off HVAC and fans
    except the noise source.
 4. Measure and record the actual gap between the INMP441 port and the lid
-   inner face (expected ~16 mm).
+   inner face (expected 8.6 mm = 21.0 − 12.4).
 5. Lock the player volume and never change it during the set. Check the
    recorder peak: `-30 .. -12 dBFS` is a good target; never clip.
 6. Tighten the lid screws with the same torque/feel every time. Record any
@@ -133,8 +133,8 @@ Run **three repeats** per configuration and signal.
 | B | on | open | open | no | no | current case as built |
 | C | on | taped | open | no | no | tape the 4 mm hole |
 | D | on | open | taped | no | no | tape all top + right-side VACG vents |
-| E | on | open | open | 16 mm | no | foam ring at module port, do not seal the port |
-| F | on | open | open | 16 mm | yes | mesh over the lid hole, on top of the tube flange |
+| E | on | open | open | 8.6 mm | no | foam ring at module port, do not seal the port |
+| F | on | open | open | 8.6 mm | yes | mesh over the lid hole, on top of the tube flange |
 | G | on | open | open | no | yes | mesh only |
 | S | on | open | open | optional | no | only if a side-vent prototype is already printed |
 
@@ -148,8 +148,8 @@ Additional checks:
 
 ### Tube resonance note
 
-A 4 mm ID, 16 mm tube has a quarter-wave pipe resonance near
-`343 / (4 * 0.016) = 5.4 kHz` (and related modes). Treat any 5–6 kHz band
+A 4 mm ID, 8.6 mm tube has a quarter-wave pipe resonance near
+`343 / (4 * 0.0086) = 10.0 kHz` (and related modes). Treat any 9–10 kHz band
 change as a possible tube artifact, not automatically as a case effect. Report
 it; a shorter or wider bore is the follow-up if it matters.
 
@@ -238,7 +238,7 @@ A change is "meaningful" only if it is larger than the repeat-to-repeat spread.
 | Narrow dip/peak > 6 dB at any 300–3400 Hz band | Coloration/resonance (case cavity or tube) | Try tube; if it persists, test vents; record the resonance frequency |
 | Loss only with vents taped, vents open close to baseline | Cavity pressure/leakage | Keep vents open; no new part |
 | Mesh costs > 3 dB above 4 kHz | Mesh too resistive | Reject that mesh or use a thinner acoustic mesh |
-| Tube adds a 5–6 kHz peak/dip | Tube resonance | Shorten the tube (e.g. 10 mm) and repeat; do not adopt the 16 mm tube |
+| Tube adds a 9–10 kHz peak/dip | Tube resonance | Shorten the tube (e.g. 8.0 mm) and repeat; do not adopt the 8.6 mm tube |
 | Three repeats differ by > 1 dB RMS or > 2 dB in a band | Setup instability | Repeat the set; fix the stand/speaker/volume first |
 
 If no configuration recovers the level, record the result and open a follow-up
@@ -253,7 +253,7 @@ for a port/side-vent design; do not modify the production case in HS-3.
   record any deviation.
 - INMP441 module variants and port orientation differ; confirm the top-facing
   port is unobstructed before every set.
-- The 16 mm tube can add its own resonance; report it separately from the case.
+- The 8.6 mm tube can add its own resonance (~10 kHz); report it separately from the case.
 - Dust mesh attenuation depends on the material; record the exact mesh.
 - Side vents are only tested if a prototype already exists.
 
@@ -361,13 +361,13 @@ A (lid off) is clean; C (hole sealed) and D (vents taped) do not remove the
 notch, so this is the enclosed lid cavity depth mode — not the 4 mm hole and
 not the VACG vents.
 
-A 16 mm tube from the mic port to the lid hole bypasses this cavity. A no-print
-equivalent is a **4 mm ID aquarium/silicone tube** (16 mm, foam ring at the
+An 8.6 mm tube from the mic port to the lid hole bypasses this cavity. A no-print
+equivalent is a **4 mm ID aquarium/silicone tube** (8.6 mm, foam ring at the
 port). If that is unavailable, any of these work for the first E check:
 
-- a **drinking straw** (≈5 mm ID), cut to ≈16 mm; butt its top against the
+- a **drinking straw** (≈5 mm ID), cut to ≈8.6 mm; butt its top against the
   inside of the 4 mm lid hole and seal with foam/tape;
-- a **rolled card/paper tube**, 4–5 mm ID × 16 mm, taped;
+- a **rolled card/paper tube**, 4–5 mm ID × 8.6 mm, taped;
 - a **Blu-Tack tube** moulded around a 4 mm mandrel (pen refill/drill bit),
   mandrel removed; keep it off the 0.25 mm mic port.
 

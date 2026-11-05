@@ -393,7 +393,7 @@ module plunger() {
 // length, flanges included. Print standing on a flange (as oriented).
 mic_tube_id       = 4.0;
 mic_tube_wall     = 1.2;
-mic_tube_len      = is_undef(mic_tube_len) ? 16.0 : mic_tube_len;
+mic_tube_len      = is_undef(mic_tube_len) ? 8.6 : mic_tube_len;
 mic_tube_flange_d = 10.0;
 mic_tube_flange_t = 1.2;
 mic_tube_ft       = min(mic_tube_flange_t, mic_tube_len / 2);

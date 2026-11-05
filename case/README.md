@@ -20,7 +20,7 @@
 | `esp32_case_lid_501_ext.stl` | HC-SR501 lid + 30 mm front cable extension |
 | `esp32_case_lid_pir_ext.stl` | Mini-PIR lid + 30 mm front cable extension |
 | `esp32_case_pir501_cover.stl` | Removable ceiling/cover for the HC-SR501 bay |
-| `esp32_case_mic_tube.stl` | HS-3 MIC1 test tube: 4 mm ID, 16 mm long, 10 mm flanges |
+| `esp32_case_mic_tube.stl` | HS-3 MIC1 test tube: 4 mm ID, 8.6 mm long, 10 mm flanges |
 | `esp32_case_lid_pir.stl` | Lid with 13 x 13.4 mm mini-PIR window |
 | `esp32_case_plunger.stl` | Optional KEY1 button cap |
 | `esp32_case_preview.png` | Standard case preview with PCB mock-up |
@@ -53,10 +53,10 @@ openscad -o esp32_case_mic_tube.stl -D 'part="mic_tube"' esp32_case.scad
 ```
 
 The extension variants add `-D front_ext=30`. The MIC1 tube length is
-`mic_tube_len` (default 16 mm, flanges included); for a shorter tube:
+`mic_tube_len` (default 8.6 mm, flanges included); for a shorter tube:
 
 ```sh
-openscad -o /tmp/mic_tube_10.stl -D 'part="mic_tube"' -D mic_tube_len=10 esp32_case.scad
+openscad -o /tmp/mic_tube_80.stl -D 'part="mic_tube"' -D mic_tube_len=8.0 esp32_case.scad
 ```
 
 ## Dimensions
@@ -210,8 +210,8 @@ across the ventilation openings.
   Remove the lid to insert or remove cards. The front wall is solid; add slots
   if you need external card access.
 - **MIC1 test tube:** `esp32_case_mic_tube.stl` is a bench-test part for HS-3,
-  not part of the standard assembly. It bridges the ~16 mm gap between the
-  top-facing INMP441 port and the 4 mm lid hole. See
+  not part of the standard assembly. It bridges the ~8.6 mm gap between the
+  top-facing INMP441 port and the 4 mm lid hole (measured 12.4 mm module top). See
   [`../docs/mic_case_test.md`](../docs/mic_case_test.md).
 - The case is designed for a 1.6 mm PCB. A 2.0 mm PCB reduces the top clearance
   by 0.4 mm and the M2x8 engagement by 0.4 mm.
