@@ -51,9 +51,12 @@
   clear of the base lip. The outer surfaces are flush; the visible seam is the
   bottom edge of the lid skirt.
 - Plus **4x M2x20 lid screws** inserted from under the base on all versions.
-  Heads recessed, lid top clean; the screws are **2.4 mm from the outer side
-  walls** (x = -0.4 / 81.6 mm) and their bosses clear the PCB edge by 1.6 mm.
-  Local bottom pads keep the recessed heads supported at the chamfer.
+  Heads recessed, lid top clean; the four screws are at the corners, **2.4 mm
+  from the side walls and 3.55 mm from the front/back walls** (x = -0.4 /
+  81.6 mm; y = 2.75 / 67.45 mm standard, -27.25 / 67.45 mm +30). Their bosses
+  clear the PCB edge by 1.6 mm. The base posts run full height from the floor
+  to the rim, beside the PCB corner bosses. Local bottom pads keep the recessed
+  heads supported at the chamfer.
 - Walls / floor / lid top: **1.6 mm**
 - External corners: **R4**, top/bottom outer edges chamfered **1 mm**
 

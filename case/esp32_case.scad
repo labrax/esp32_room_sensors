@@ -62,15 +62,16 @@ z_lid_inner = z_pcb_t + top_clr;
 z_top       = z_lid_inner + lid_top_t;
 
 // Lid screws: inserted from under the base, heads recessed in the floor.
-// M2x20: 1.6 mm floor + 8.1 mm air + 3 mm base boss + 7.3 mm lid-post grip.
-lid_screw_edge = 2.4;   // screw centre to the outer side wall
+// M2x20: 1.6 mm floor + 11.1 mm base post + 7.3 mm lid-post grip.
+lid_screw_edge   = 2.4;   // screw centre to the outer side wall
+lid_screw_corner = 3.55;  // screw centre to the outer front/back wall
 lid_screw_x   = [base_x0 + lid_screw_edge,
                  base_x0 + base_w - lid_screw_edge];
-lid_screw_y   = front_ext > 0 ? [-15, 45] : [15, 45];
+lid_screw_y   = [base_y0 + lid_screw_corner,
+                 base_y0 + base_d - lid_screw_corner];
 lid_screw_d   = 2.2;    // clearance through base floor and boss
 lid_pilot_d   = 1.85;   // pilot in the lid post
 lid_post_d    = 3.8;
-lid_boss_h    = z_base_top - z_pcb_t;   // 3.0 mm
 lid_pilot_h   = 8.0;
 
 // board -> case coordinates
@@ -157,11 +158,11 @@ module base() {
         for (sy = lid_screw_y)
           translate([sx, sy, 0])
             cylinder(d=4.6, h=edge_cham + 0.1);
-      // lid-screw bosses above the PCB
+      // full-height lid-screw posts at the corners
       for (sx = lid_screw_x)
         for (sy = lid_screw_y)
-          translate([sx, sy, z_pcb_t])
-            cylinder(d=lid_post_d, h=lid_boss_h);
+          translate([sx, sy, z_floor])
+            cylinder(d=lid_post_d, h=z_base_top - z_floor);
     }
 
     // M2 pilot holes with a lead-in counterbore at the boss top
@@ -171,13 +172,11 @@ module base() {
       translate([p[0], p[1], z_pcb_b - 0.8])
         cylinder(d=pilot_d + 0.4, h=0.9);
     }
-    // lid-screw clearance through the side bosses and base floor
+    // lid-screw clearance through the corner posts and base floor
     for (sx = lid_screw_x)
       for (sy = lid_screw_y) {
-        translate([sx, sy, z_pcb_t])
-          cylinder(d=lid_screw_d, h=lid_boss_h + 0.1);
         translate([sx, sy, -0.1])
-          cylinder(d=lid_screw_d, h=z_pcb_t + 0.2);
+          cylinder(d=lid_screw_d, h=z_base_top + 0.2);
         translate([sx, sy, -0.1])
           cylinder(d=4.0, h=1.5);
       }
