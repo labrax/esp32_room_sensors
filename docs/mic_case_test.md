@@ -373,3 +373,39 @@ port). If that is unavailable, any of these work for the first E check:
 
 **Open-cell foam** filling the lid (clear of the hole and port) is the other
 damping test. The printed `mic_tube` is not required for the first E check.
+
+### E — 8.6 mm tube, plus a null — 2026-11-04
+
+Files: `/tmp/opencode/hs3_serial/E1.wav` … `E3.wav`, and `null.wav` (tube fitted,
+no playback). **Session note:** A–D were recorded in a noisier part of the day;
+null and E were recorded late at night. A–D vs E is therefore a cross-session
+comparison; the 1.25 kHz notch and the 8–10 kHz feature are the robust results,
+the overall level is less certain.
+
+| Config | Run | RMS dBFS | Peak dBFS |
+|---|---|---|---|
+| E — tube | 1 | −60.7 | −43.7 |
+| E — tube | 2 | −60.8 | −43.7 |
+| E — tube | 3 | −60.9 | −43.8 |
+| null — no playback | 1 | −74.9 | −59.7 |
+
+- E is **+0.4 to +0.6 dB vs A** — the tube restores the overall level
+  (B/D were +1.4 to +3.3). The null is 13.7 dB below A and ~14 dB below E.
+- **1.25 kHz notch:** E1 **−8.7**, E2 **−7.0**, E3 **−7.1 dB**. The tube cuts
+  the notch by roughly 3–6 dB versus B/D, but does **not** remove it.
+- Speech-band average is **+0.0 to +0.5 dB**; 400 Hz is −4.5 to −5.1 dB;
+  630/800 Hz and 2 kHz peaks remain.
+- **New 8–10 kHz resonance:** E 8 kHz ≈ −80 dBFS (A −98; B −94 to −98), and
+  E2/E3 10 kHz ≈ −79/−81 dBFS. The null at 8–10 kHz is ≈ −98 dBFS, so this is
+  the tube, not the background. Consistent with the 8.6 mm tube’s ~10 kHz
+  quarter-wave.
+- Null interpretation: above ~315 Hz E is signal-dominated; at 50–250 Hz the
+  E/null difference is only 1–9 dB, so the low-frequency E data is unreliable.
+
+**E conclusion:** the 8.6 mm tube is a real improvement — overall level is back
+to A and the 1.25 kHz notch is reduced — but it is **not final**: a residual
+−7 dB notch remains and the tube adds an 8–10 kHz resonance. Next: **F**
+(tube + acoustic mesh) to damp the 8–10 kHz, or an **8.0 mm tube** (resonance
+moves to ~10.7 kHz), then decide. Run F in the same late-night session as E so
+the comparison is not confounded by the A–D noise. The residual 1.25 kHz may be
+the module/port or the remaining cavity.
