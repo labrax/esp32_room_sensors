@@ -406,7 +406,9 @@ the overall level is less certain.
 was a real improvement — overall level back to A and the 1.25 kHz notch reduced
 — but a residual −7 dB notch remains and the tube adds an 8–10 kHz resonance.
 For background-noise recording (trains/road/snoring) that is acceptable; the
-1.25 kHz notch is not acceptable for high-quality voice/ASR. F (tube + mesh)
-and the 8.0 mm tube were **not run**; they remain documented options if the
-voice use case becomes important. The residual 1.25 kHz may be the module/port
-or the remaining cavity.
+1.25 kHz notch is not acceptable for high-quality voice/ASR. The standard lid
+now carries the same 8.6 mm tube integrated into the lid; the separate
+`esp32_case_mic_tube.stl` is a test/alternative part, not to be used with the
+integrated lid. F (tube + mesh) and the 8.0 mm tube were **not run**; they
+remain documented options if the voice use case becomes important. The residual
+1.25 kHz may be the module/port or the remaining cavity.

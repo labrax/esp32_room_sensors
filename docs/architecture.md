@@ -465,11 +465,13 @@ Document these options in `case/README.md`:
 3. **Leave as-is.** Acceptable for voice/level monitoring; calibrate in situ.
 
 **HS-3 decision (2026-11-04):** use the 8.6 mm tube for background-noise
-recording (trains/road/snoring). It restores the overall level and reduces the
-1.25 kHz notch, but leaves a ~−7 dB residual notch and an 8–10 kHz tube
-resonance. This is not a measurement-grade or voice/ASR port; F (tube + mesh)
-and the 8.0 mm tube were not run. The main firmware INMP441 channel is flagged
-on HS-7.
+recording (trains/road/snoring). The standard lid now carries the tube
+integrated into the lid; the separate `esp32_case_mic_tube.stl` is a
+test/alternative part and must not be used with the integrated lid. The tube
+restores the overall level and reduces the 1.25 kHz notch, but leaves a ~−7 dB
+residual notch and an 8–10 kHz tube resonance. This is not a measurement-grade
+or voice/ASR port; F (tube + mesh) and the 8.0 mm tube were not run. The main
+firmware INMP441 channel is flagged on HS-7.
 4. **Side vents.** Keep the existing VACG side vents for airflow. HS-3 tests
    their acoustic effect if a prototype is available; do not remove them for
    the microphone.

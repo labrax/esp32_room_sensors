@@ -93,7 +93,7 @@ key1_x = bx(8.255);   key1_y = by(-53.848);   // 12x12 mm tactile switch
 phr_x  = bx(2.667);   phr_y  = by(-38.862);   // LDR body 2.54 x 5.08 mm
 mic_x  = bx(62.865);  mic_y  = by( -7.493);   // round I2S mic module
 mic_tube_id   = 4.0;    // INMP441 sound tube inner diameter
-mic_tube_len  = 8.6;    // tube length below the lid inner face
+mic_tube_len  = is_undef(mic_tube_len) ? 8.6 : mic_tube_len;  // tube length below the lid inner face
 mic_tube_wall = 1.2;    // tube wall thickness
 vacg_cx = bx(62.357); vacg_cy = by(-36.220);  // 4x6 I2C header field
 
@@ -406,9 +406,6 @@ module plunger() {
 // Short tube between the INMP441 port and the 4 mm lid hole. 4 mm ID,
 // 1.2 mm wall, 10 mm flange at each end. mic_tube_len is the overall
 // length, flanges included. Print standing on a flange (as oriented).
-mic_tube_id       = 4.0;
-mic_tube_wall     = 1.2;
-mic_tube_len      = is_undef(mic_tube_len) ? 8.6 : mic_tube_len;
 mic_tube_flange_d = 10.0;
 mic_tube_flange_t = 1.2;
 mic_tube_ft       = min(mic_tube_flange_t, mic_tube_len / 2);

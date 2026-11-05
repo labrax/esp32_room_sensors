@@ -117,10 +117,12 @@ length is an empty cable compartment in front of the board.
 - **Base:** print as oriented, open side up. No supports.
 - **Base 501:** print as oriented; the PIR bay is open at the top. No supports.
 - **Lid:** print as oriented. The STL is already flipped so the top face is on
-  the bed and the open side is up. No supports.
+  the bed and the open side is up. No supports. The standard lid STL includes
+  the integrated 8.6 mm MIC1 tube; clear the 4 mm bore after printing.
 - **Plunger:** print as oriented, base plate on the bed. No supports.
-- **MIC1 acoustic port tube:** print as oriented, one 10 mm flange on the bed and the
-  4 mm bore vertical. No supports. 1.2 mm wall, 3 perimeters.
+- **MIC1 acoustic port tube (separate test part):** print as oriented, one 10 mm
+  flange on the bed and the 4 mm bore vertical. No supports. 1.2 mm wall,
+  3 perimeters. Not needed with the standard lid, which already has the tube.
 
 ## Assembly
 
@@ -132,9 +134,11 @@ length is an empty cable compartment in front of the board.
    cap stays above the lid.
 4. Press the lid on; the lid outer skirt drops onto the base shelf and the lid
    inner wall seats on the raised base lip.
-5. Insert the **M2x20 lid screws** from under the base into the lid posts and
+5. Fit a soft foam ring around the INMP441 port; the standard lid's integrated
+   8.6 mm tube should sit on the foam without pressing on the 0.25 mm port.
+6. Insert the **M2x20 lid screws** from under the base into the lid posts and
    tighten. The heads sit in the bottom counterbores.
-6. To open, remove the lid screws, then pry gently at the PHR side window, the
+7. To open, remove the lid screws, then pry gently at the PHR side window, the
    USB hole, or the VACG side vents.
 
 The PCB mounting holes are 2.032 mm, so M2 screws pass through. If the printed
@@ -219,11 +223,11 @@ across the ventilation openings.
 - **SD cards:** the two SD-card headers are inside the front-right of the case.
   Remove the lid to insert or remove cards. The front wall is solid; add slots
   if you need external card access.
-- **MIC1 acoustic port tube:** `esp32_case_mic_tube.stl` is an optional 8.6 mm
-  tube for the top-facing INMP441 port; it bridges the ~8.6 mm gap to the 4 mm
-  lid hole (measured 12.4 mm module top). This is the selected configuration for
-  background-noise use. Residual 1.25 kHz notch and an 8–10 kHz tube resonance;
-  add a mesh/windscreen for dust and wind. See
+- **MIC1:** the standard lid includes the integrated 8.6 mm acoustic tube
+  (4 mm ID, 1.2 mm wall). `esp32_case_mic_tube.stl` is a separate test/alternative
+  part; do not use it together with the integrated lid. The selected configuration
+  for background-noise use has a residual 1.25 kHz notch and an 8–10 kHz tube
+  resonance; add a mesh/windscreen for dust and wind. See
   [`../docs/mic_case_test.md`](../docs/mic_case_test.md).
 - The case is designed for a 1.6 mm PCB. A 2.0 mm PCB reduces the top clearance
   by 0.4 mm and the M2x8 engagement by 0.4 mm.
