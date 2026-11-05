@@ -402,10 +402,11 @@ the overall level is less certain.
 - Null interpretation: above ~315 Hz E is signal-dominated; at 50–250 Hz the
   E/null difference is only 1–9 dB, so the low-frequency E data is unreliable.
 
-**E conclusion:** the 8.6 mm tube is a real improvement — overall level is back
-to A and the 1.25 kHz notch is reduced — but it is **not final**: a residual
-−7 dB notch remains and the tube adds an 8–10 kHz resonance. Next: **F**
-(tube + acoustic mesh) to damp the 8–10 kHz, or an **8.0 mm tube** (resonance
-moves to ~10.7 kHz), then decide. Run F in the same late-night session as E so
-the comparison is not confounded by the A–D noise. The residual 1.25 kHz may be
-the module/port or the remaining cavity.
+**Decision (2026-11-04): stop the experiment; use the 8.6 mm tube.** The tube
+was a real improvement — overall level back to A and the 1.25 kHz notch reduced
+— but a residual −7 dB notch remains and the tube adds an 8–10 kHz resonance.
+For background-noise recording (trains/road/snoring) that is acceptable; the
+1.25 kHz notch is not acceptable for high-quality voice/ASR. F (tube + mesh)
+and the 8.0 mm tube were **not run**; they remain documented options if the
+voice use case becomes important. The residual 1.25 kHz may be the module/port
+or the remaining cavity.

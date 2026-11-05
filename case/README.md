@@ -20,7 +20,7 @@
 | `esp32_case_lid_501_ext.stl` | HC-SR501 lid + 30 mm front cable extension |
 | `esp32_case_lid_pir_ext.stl` | Mini-PIR lid + 30 mm front cable extension |
 | `esp32_case_pir501_cover.stl` | Removable ceiling/cover for the HC-SR501 bay |
-| `esp32_case_mic_tube.stl` | HS-3 MIC1 test tube: 4 mm ID, 8.6 mm long, 10 mm flanges |
+| `esp32_case_mic_tube.stl` | MIC1 acoustic port tube (HS-3): 4 mm ID, 8.6 mm long, 10 mm flanges |
 | `esp32_case_lid_pir.stl` | Lid with 13 x 13.4 mm mini-PIR window |
 | `esp32_case_plunger.stl` | Optional KEY1 button cap |
 | `esp32_case_preview.png` | Standard case preview with PCB mock-up |
@@ -42,7 +42,7 @@
 | `lid_pir` | Lid with the 13 x 13.4 mm mini-PIR window |
 | `plunger` | KEY1 button cap |
 | `pir501_cover` | HC-SR501 bay cover |
-| `mic_tube` | HS-3 MIC1 test tube (4 mm ID) |
+| `mic_tube` | MIC1 acoustic port tube (4 mm ID, 8.6 mm) |
 | `assembly`, `assembly_pir`, `assembly_501` | Preview only, not exported |
 | `none` | No top-level geometry (used by the joint-check wrapper) |
 
@@ -119,7 +119,7 @@ length is an empty cable compartment in front of the board.
 - **Lid:** print as oriented. The STL is already flipped so the top face is on
   the bed and the open side is up. No supports.
 - **Plunger:** print as oriented, base plate on the bed. No supports.
-- **MIC1 test tube:** print as oriented, one 10 mm flange on the bed and the
+- **MIC1 acoustic port tube:** print as oriented, one 10 mm flange on the bed and the
   4 mm bore vertical. No supports. 1.2 mm wall, 3 perimeters.
 
 ## Assembly
@@ -215,9 +215,11 @@ across the ventilation openings.
 - **SD cards:** the two SD-card headers are inside the front-right of the case.
   Remove the lid to insert or remove cards. The front wall is solid; add slots
   if you need external card access.
-- **MIC1 test tube:** `esp32_case_mic_tube.stl` is a bench-test part for HS-3,
-  not part of the standard assembly. It bridges the ~8.6 mm gap between the
-  top-facing INMP441 port and the 4 mm lid hole (measured 12.4 mm module top). See
+- **MIC1 acoustic port tube:** `esp32_case_mic_tube.stl` is an optional 8.6 mm
+  tube for the top-facing INMP441 port; it bridges the ~8.6 mm gap to the 4 mm
+  lid hole (measured 12.4 mm module top). This is the selected configuration for
+  background-noise use. Residual 1.25 kHz notch and an 8–10 kHz tube resonance;
+  add a mesh/windscreen for dust and wind. See
   [`../docs/mic_case_test.md`](../docs/mic_case_test.md).
 - The case is designed for a 1.6 mm PCB. A 2.0 mm PCB reduces the top clearance
   by 0.4 mm and the M2x8 engagement by 0.4 mm.

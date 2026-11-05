@@ -458,10 +458,18 @@ Document these options in `case/README.md`:
 
 1. **Gasket/cup (recommended if acoustic data matters).** A soft foam ring
    around the port and a short, wide cup to the lid hole. Avoid a narrow
-   4 mm x 8.6 mm tube: a quarter-wave resonance near 10 kHz colors the band.
+   4 mm x 8.6 mm tube for voice/ASR: it leaves a residual 1.25 kHz notch and a
+   quarter-wave resonance near 10 kHz.
 2. **Dust mesh.** An acoustic mesh over the 4 mm hole keeps dust out; measure
    the high-frequency attenuation.
 3. **Leave as-is.** Acceptable for voice/level monitoring; calibrate in situ.
+
+**HS-3 decision (2026-11-04):** use the 8.6 mm tube for background-noise
+recording (trains/road/snoring). It restores the overall level and reduces the
+1.25 kHz notch, but leaves a ~−7 dB residual notch and an 8–10 kHz tube
+resonance. This is not a measurement-grade or voice/ASR port; F (tube + mesh)
+and the 8.0 mm tube were not run. The main firmware INMP441 channel is flagged
+on HS-7.
 4. **Side vents.** Keep the existing VACG side vents for airflow. HS-3 tests
    their acoustic effect if a prototype is available; do not remove them for
    the microphone.
