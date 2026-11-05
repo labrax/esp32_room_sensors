@@ -213,7 +213,7 @@ void setup() {
   xTaskCreatePinnedToCore(
         audio_loop, /* Function to implement the task */
         "audio_loop", /* Name of the task */
-        4096,  /* Stack size in words */
+        4096,  /* Stack size in bytes */
         NULL,  /* Task input parameter */
         1,  /* Priority of the task */
         &DataAudioTask,  /* Task handle. */
@@ -222,7 +222,7 @@ void setup() {
   xTaskCreatePinnedToCore(
         sensor_data_loop, /* Function to implement the task */
         "sensor_loop", /* Name of the task */
-        1900,  /* Stack size in words */
+        4096,  /* bytes; 1900 B was too small for the float Serial.printf */
         NULL,  /* Task input parameter */
         0,  /* Priority of the task */
         &DataTask,  /* Task handle. */
@@ -231,7 +231,7 @@ void setup() {
   xTaskCreatePinnedToCore(
         sensor_pir_data_loop, /* Function to implement the task */
         "sensor_pir_loop", /* Name of the task */
-        1500,  /* Stack size in words */
+        1500,  /* Stack size in bytes */
         NULL,  /* Task input parameter */
         0,  /* Priority of the task */ 
         &DataPIRTask,  /* Task handle. */
@@ -240,7 +240,7 @@ void setup() {
   xTaskCreatePinnedToCore(
         input_loop, /* Function to implement the task */
         "input_loop", /* Name of the task */
-        4096,  /* Stack size in words */
+        4096,  /* Stack size in bytes */
         NULL,  /* Task input parameter */
         0,  /* Priority of the task */ 
         &InputHandlingTask,  /* Task handle. */
@@ -249,7 +249,7 @@ void setup() {
   xTaskCreatePinnedToCore(
         sensor_accel_loop, /* Function to implement the task */
         "sensor_accel_loop", /* Name of the task */
-        4096,  /* Stack size in words */
+        4096,  /* Stack size in bytes */
         NULL,  /* Task input parameter */
         0,  /* Priority of the task */ 
         &DataAccelTask,  /* Task handle. */
