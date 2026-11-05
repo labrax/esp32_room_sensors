@@ -117,11 +117,14 @@ tape to the lid skirt; if it is tight, sand the skirt lightly.
 |---|---|
 | **KEY1** | 14 mm top opening + optional plunger |
 | **PHR** | 5 mm top light hole + 12 x 10 mm left-side window (lid-only, from the seam) |
-| **MIC1** | 4 mm top sound hole |
+| **MIC1** | 4 mm top sound hole + 4 mm ID x 8.6 mm acoustic tube (1.2 mm wall) |
 | **VACG1 … VCAG2** | 5x 8 x 2 mm top slots + 3x 3 x 10 mm right-side slots (lid-only, starting at the seam) |
 | **USB / U3 wire** | 4 mm hole in the front wall, split between base and lid |
 | **Mini PIR (optional)** | 13 x 13.4 mm front window, `esp32_case_lid_pir.stl` |
 | **HC-SR501 (optional)** | 25 mm lens hole in the `base_501` front bay + removable cover |
+
+The MIC1 acoustic tube hangs **8.6 mm** below the lid inner face, with a
+**4 mm ID** and **1.2 mm wall** (6.4 mm OD).
 
 The USB hole is sized for a **3.2 mm cable**, not a USB plug. It is centred at
 `x = 39.44 mm` on the U3/USB centreline and is split at the base/lid seam.
@@ -173,6 +176,7 @@ across the ventilation openings.
 - **Which hole is which:**
   - **4 mm front hole** — U3/USB wire pass-through.
   - **5 mm top hole near the front-left** — PHR light hole.
+  - **4 mm top hole with tube** — MIC1 / INMP441 acoustic tube.
   - **13 x 13.4 mm front window** — mini PIR only (`esp32_case_lid_pir.stl`).
   - **25 mm front hole** — HC-SR501 lens, in the `base_501` bay.
   The HC-SR501 lid (`esp32_case_lid_501.stl`) has no mini-PIR window; do not use

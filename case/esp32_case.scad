@@ -90,6 +90,9 @@ holes = [
 key1_x = bx(8.255);   key1_y = by(-53.848);   // 12x12 mm tactile switch
 phr_x  = bx(2.667);   phr_y  = by(-38.862);   // LDR body 2.54 x 5.08 mm
 mic_x  = bx(62.865);  mic_y  = by( -7.493);   // round I2S mic module
+mic_tube_id   = 4.0;    // INMP441 sound tube inner diameter
+mic_tube_len  = 8.6;    // tube length below the lid inner face
+mic_tube_wall = 1.2;    // tube wall thickness
 vacg_cx = bx(62.357); vacg_cy = by(-36.220);  // 4x6 I2C header field
 
 // ---------------- 2D helpers ----------------
@@ -303,6 +306,9 @@ module lid(use_pir = false) {
           rrect_z(inner_w + case_extra - 0.2, case_depth - 2*wall - 0.2,
                   inner_r, z_base_top - 0.1, z_lid_inner);
       }
+      // microphone acoustic tube on the lid underside
+      translate([mic_x, mic_y, z_lid_inner - mic_tube_len])
+        cylinder(d=mic_tube_id + 2*mic_tube_wall, h=mic_tube_len + 0.1);
       // outer skirt that sits on the base shelf.  It is 0.01 mm inside the
       // main body and 0.2 mm clear of the raised base inner lip.
       translate([base_x0 + 0.01, base_y0 + 0.01, z_base_top - skirt_h])
@@ -331,11 +337,12 @@ module lid(use_pir = false) {
     translate([phr_x, phr_y, z_top - 1])
       cylinder(d1=5, d2=7, h=1.01);
 
-    // MIC1 sound hole + chamfer
-    translate([mic_x, mic_y, z_lid_inner - 1])
-      cylinder(d=4, h=z_top - z_lid_inner + 2);
+    // MIC1 sound hole through the lid and acoustic tube, plus top chamfer
+    translate([mic_x, mic_y, z_lid_inner - mic_tube_len - 1])
+      cylinder(d=mic_tube_id,
+               h=z_top - (z_lid_inner - mic_tube_len - 1) + 1);
     translate([mic_x, mic_y, z_top - 1])
-      cylinder(d1=4, d2=6, h=1.01);
+      cylinder(d1=mic_tube_id, d2=6, h=1.01);
 
     // VACG top vent slots (5x 8 x 2 mm)
     for (yy = [25.5, 28.5, 31.5, 34.5, 37.5])
