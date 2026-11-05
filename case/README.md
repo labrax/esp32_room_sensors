@@ -61,15 +61,17 @@ openscad -o /tmp/mic_tube_80.stl -D 'part="mic_tube"' -D mic_tube_len=8.0 esp32_
 
 ## Dimensions
 
-- Standard case: **82.8 x 71.8 x 32.3 mm**
-- Standard +30 mm extension: **82.8 x 101.8 x 32.3 mm**
-- HC-SR501 version: **83.4 x 98.4 x 32.3 mm** (bay included)
-- HC-SR501 +30 mm extension: **83.4 x 128.4 x 32.3 mm**
+- Standard case: **86.8 x 71.8 x 32.3 mm**
+- Standard +30 mm extension: **86.8 x 101.8 x 32.3 mm**
+- HC-SR501 version: **87.4 x 98.4 x 32.3 mm** (bay included)
+- HC-SR501 +30 mm extension: **87.4 x 128.4 x 32.3 mm**
 - PCB position: bottom at **z = 8.1 mm**
 - Bottom clearance: **6.5 mm** (PCB bottom to inner floor)
 - Top clearance: **21 mm** (20 mm requested + 1 mm margin)
-- PCB: 75 x 64 x 1.6 mm, **2.2 mm clearance to the case walls**; the
-  lid-screw holes sit just outside the PCB edge
+- PCB: 75 x 64 x 1.6 mm, **4.2 mm side clearance** (2.2 mm front/back); the
+  lid-screw bosses clear the PCB edge by 1.6 mm
+- Width increased **2 mm on each side** (4 mm total) compared with the
+  previous version; the PCB and board screws stay at their original positions.
 - Board screws: **4x M2 x 8 mm**, 1.85 mm pilot holes 6.5 mm deep with a
   2.25 mm lead-in, in 8 x 8 mm corner bosses
 - Lid joint: **external rabbet, base inner lip raised**. The base rim has a
@@ -79,8 +81,12 @@ openscad -o /tmp/mic_tube_80.stl -D 'part="mic_tube"' -D mic_tube_len=8.0 esp32_
   clear of the base lip. The outer surfaces are flush; the visible seam is the
   bottom edge of the lid skirt.
 - Plus **4x M2x20 lid screws** inserted from under the base on all versions.
-  Heads recessed, lid top clean; the screws are at x = 1.9 / 79.3 mm and sit
-  just outside the PCB edge
+  Heads recessed, lid top clean; the four screws are at the corners, **2.4 mm
+  from the side walls and 3.55 mm from the front/back walls** (x = -0.4 /
+  81.6 mm; y = 2.75 / 67.45 mm standard, -27.25 / 67.45 mm +30). Their bosses
+  clear the PCB edge by 1.6 mm. The base posts run full height from the floor
+  to the rim, beside the PCB corner bosses. Local bottom pads keep the recessed
+  heads supported at the chamfer.
 - Walls / floor / lid top: **1.6 mm**
 - External corners: **R4**, top/bottom outer edges chamfered **1 mm**
 
@@ -187,7 +193,7 @@ across the ventilation openings.
   ground. The output is normally 3.3 V logic — measure it once; if your unit
   outputs 5 V, add a divider.
 - The bay is on the front-right; the 4 mm USB/U3 wire hole remains to its left.
-  The base with the bay is **83.4 x 98.4 mm**; the cover is 37.6 x 27.4 mm and
+  The base with the bay is **87.4 x 98.4 mm**; the cover is 37.6 x 27.4 mm and
   adds about 1 mm at the front and sides.
 
 ## Notes / checks

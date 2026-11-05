@@ -22,7 +22,8 @@ top_clr     = 21.0;     // PCB top to lid inner top (20 mm requested + 1 mm marg
 rim_above   = 3.0;      // base wall above PCB top
 lid_top_t   = 1.6;
 
-case_extra  = 1.6;      // extra outer width/depth for the external rabbet
+case_extra  = 1.6;      // original extra width/depth for the external rabbet
+side_extra  = 2.0;      // additional width on each side of the PCB
 corner_r    = 4.0;      // outer vertical corner radius
 edge_cham   = 1.0;      // top/bottom outer edge chamfer
 
@@ -31,7 +32,7 @@ pilot_d     = 1.85;     // M2 self-tapping pilot
 pilot_depth = 6.5;
 
 // ---------------- derived ----------------
-inner_w = pcb_w + 2*clearance;
+inner_w = pcb_w + 2*clearance + 2*side_extra;
 inner_h = pcb_h + 2*clearance;
 outer_w = inner_w + 2*wall + case_extra;
 outer_h = inner_h + 2*wall + case_extra;
@@ -46,7 +47,7 @@ case_y0    = -front_ext;
 // Base/lid joint.  The base rim has a lowered outer shelf and a raised inner
 // lip; the lid has a raised outer skirt that sits on that shelf.  The lid
 // skirt is 0.2 mm clear of the base inner lip so the parts can seat.
-base_x0  = -case_extra/2;
+base_x0  = -case_extra/2 - side_extra;
 base_y0  = case_y0 - case_extra/2;
 base_w   = outer_w;
 base_d   = case_depth;
@@ -63,13 +64,16 @@ z_lid_inner = z_pcb_t + top_clr;
 z_top       = z_lid_inner + lid_top_t;
 
 // Lid screws: inserted from under the base, heads recessed in the floor.
-// M2x20: 1.6 mm floor + 8.1 mm air + 3 mm base boss + 7.3 mm lid-post grip.
-lid_screw_x   = [1.9, outer_w - 1.9 - case_extra];
-lid_screw_y   = front_ext > 0 ? [-15, 45] : [15, 45];
+// M2x20: 1.6 mm floor + 11.1 mm base post + 7.3 mm lid-post grip.
+lid_screw_edge   = 2.4;   // screw centre to the outer side wall
+lid_screw_corner = 3.55;  // screw centre to the outer front/back wall
+lid_screw_x   = [base_x0 + lid_screw_edge,
+                 base_x0 + base_w - lid_screw_edge];
+lid_screw_y   = [base_y0 + lid_screw_corner,
+                 base_y0 + base_d - lid_screw_corner];
 lid_screw_d   = 2.2;    // clearance through base floor and boss
 lid_pilot_d   = 1.85;   // pilot in the lid post
 lid_post_d    = 3.8;
-lid_boss_h    = z_base_top - z_pcb_t;   // 3.0 mm
 lid_pilot_h   = 8.0;
 
 // board -> case coordinates
@@ -151,11 +155,16 @@ module base() {
       for (p = holes)
         translate([p[0] - boss_w/2, p[1] - boss_w/2, z_floor])
           cube([boss_w, boss_w, bottom_clr]);
-      // lid-screw bosses above the PCB
+      // flat pads keep the recessed lid-screw heads supported at the chamfer
       for (sx = lid_screw_x)
         for (sy = lid_screw_y)
-          translate([sx, sy, z_pcb_t])
-            cylinder(d=lid_post_d, h=lid_boss_h);
+          translate([sx, sy, 0])
+            cylinder(d=4.6, h=edge_cham + 0.1);
+      // full-height lid-screw posts at the corners
+      for (sx = lid_screw_x)
+        for (sy = lid_screw_y)
+          translate([sx, sy, z_floor])
+            cylinder(d=lid_post_d, h=z_base_top - z_floor);
     }
 
     // M2 pilot holes with a lead-in counterbore at the boss top
@@ -165,13 +174,11 @@ module base() {
       translate([p[0], p[1], z_pcb_b - 0.8])
         cylinder(d=pilot_d + 0.4, h=0.9);
     }
-    // lid-screw clearance through the side bosses and base floor
+    // lid-screw clearance through the corner posts and base floor
     for (sx = lid_screw_x)
       for (sy = lid_screw_y) {
-        translate([sx, sy, z_pcb_t])
-          cylinder(d=lid_screw_d, h=lid_boss_h + 0.1);
         translate([sx, sy, -0.1])
-          cylinder(d=lid_screw_d, h=z_pcb_t + 0.2);
+          cylinder(d=lid_screw_d, h=z_base_top + 0.2);
         translate([sx, sy, -0.1])
           cylinder(d=4.0, h=1.5);
       }
@@ -203,14 +210,15 @@ pir501_wall    = 1.6;
 pir501_floor   = 1.6;
 pir501_bay_h   = 30.0;   // outer bay height
 pir501_lens_d  = 25.0;
-pir501_x0      = 47.0;   // bay outer left
 pir501_y0      = case_y0 - 27.4;  // bay outer front
 
 pir501_inner_w = pir501_w + 2*pir501_clear;      // 32.4
 pir501_inner_d = pir501_d + 2*pir501_clear;      // 25.4
-pir501_outer_w = pir501_inner_w + 2*pir501_wall; // 36.4
-pir501_outer_d = pir501_inner_d + pir501_wall;   // 27.4
-pir501_cx      = pir501_x0 + pir501_outer_w/2;   // 65.2
+pir501_outer_w = pir501_inner_w + 2*pir501_wall; // 35.6
+pir501_outer_d = pir501_inner_d + pir501_wall;   // 27.0
+// keep the bay 0.6 mm outside the new right-hand case wall
+pir501_x0      = base_x0 + base_w + 0.6 - pir501_outer_w;
+pir501_cx      = pir501_x0 + pir501_outer_w/2;
 pir501_cz      = pir501_floor + pir501_h/2;      // 14.0
 
 module pir501_bay_outer() {
@@ -231,8 +239,8 @@ module pir501_bay_cuts() {
   translate([pir501_cx, pir501_y0 - 1.0, pir501_cz])
     rotate([-90, 0, 0])
       cylinder(d=pir501_lens_d, h=pir501_wall + 2.0);
-  // 3-pin cable hole through the main front wall
-  translate([60, case_y0 - 1, 4])
+  // 3-pin cable hole through the main front wall, centred in the bay
+  translate([pir501_cx - 4, case_y0 - 1, 4])
     cube([8, 4, 6]);
 }
 
@@ -337,12 +345,12 @@ module lid(use_pir = false) {
                    z_top - z_lid_inner + 2);
 
     // PHR side window: one piece in the lid, starting at the seam
-    translate([-1, phr_y - 6, z_base_top - 0.1])
-      cube([wall + 2, 12, 10.1]);
+    translate([base_x0 - 1, phr_y - 6, z_base_top - 0.1])
+      cube([lid_wall + 2, 12, 10.1]);
 
     // VACG right-side vents: one piece in the lid, starting at the seam
     for (yy = [26, 31, 36])
-      translate([outer_w - wall - 1, yy - 1.5, z_base_top])
+      translate([base_x0 + base_w - wall - 1, yy - 1.5, z_base_top])
         cube([wall + 2, 3.0, 10.0 + 0.1]);
 
     // USB cable gap (upper half)
