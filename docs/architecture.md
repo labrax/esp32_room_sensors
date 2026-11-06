@@ -332,7 +332,8 @@ page stays deleted.
   the old 5 s meta refresh is intentionally gone so a half-typed form is not
   wiped) and `GET /api/status` (JSON: `uptime_s`, `temperature_c`,
   `humidity_pct`, `pressure_hpa`, `sensors_valid`, `sensor_age_ms`, `dust_raw`,
-  `photo_raw`, `pir`, `pir_age_ms`, `accel_x_g`, `accel_y_g`, `accel_z_g`,
+  `photo_raw`, `pir`, `pir_age_ms`, `pir_last_trigger_age_ms`, `accel_x_g`,
+  `accel_y_g`, `accel_z_g`,
   `accel_age_ms`, `accel_present`, `time_source`, `time_valid`, `rtc_present`,
   `time_utc`, `sd_ok`, `recording`, `sta_connected`, `sta_ip`, `ap_ip`,
   `ap_clients`, `sta_ssid`, `sta_provisioned`). `POST /api/wifi` takes
@@ -350,7 +351,9 @@ page stays deleted.
   skipped; the old `loop()` no-SD restart was removed in the 2026-11-05
   extension. The AP page and `/api/status` carry BME280, dust/light raw ADC, PIR
   motion on D35, and accel g. Dust/light refresh on the 300 s sensor period; PIR
-  about 1 s; accel about 1 Hz when not recording. While SD recording is running,
+  about 1 s; accel about 1 Hz when not recording. The first PIR sample only
+  primes the baseline, so an HC-SR501 boot-high warm-up is not a trigger. While
+  SD recording is running,
   `loop_accel` owns the MPU and the network accel fields may be stale. Audio
   remains SD-only. The ~1 Hz MPU reads share `Wire` with the BME280 and there is
   no HS-5 I2C mutex on this branch, so rare contention is still possible. HS-8
@@ -624,6 +627,8 @@ date,time,pir
 20261104,19:45:01,1
 ```
 
+- The first PIR sample after boot only primes the baseline and is not written;
+  the next transition starts the CSV record.
 - `date` is `YYYYMMDD`, `time` is `HH:MM:SS`, both UTC.
 - On a BME280 failure, leave the temperature/humidity/pressure fields empty
   (trailing commas); do not write `nan` or a stale value.
@@ -723,6 +728,7 @@ Per-ticket gates are in the child tickets. The shared bench matrix:
 | AP thermal | 1 h AP on vs off; BME280 bias documented; > 0.5 °C opens a follow-up |
 | No SD boot | Boots within 30 s; AP stays up; `sd_ok:false`, `recording:false`; `/` and `/api/status` report BME + dust/light/PIR/accel; no reboot loop |
 | No SD live fields | `dust_raw`/`photo_raw` numeric after the first sensor sample; `pir` 0/1 ~1 s; accel ~1 Hz; `null` before the first sample, including `pir_age_ms`/`accel_age_ms` |
+| PIR last trigger | Rising edge updates the page Last trigger row and `pir_last_trigger_age_ms` within ~1 s; `null`/`none since boot` before the first trigger |
 | SD present | CSV/audio/accel/session paths still work; `sd_ok:true` |
 | 2 h audio + accel + CSV | No truncated CSV, no interleaved audio, no `sd_ok` flapping |
 | 10 min WAV | Playable 16 kHz mono; duration within 1 % |

@@ -44,7 +44,8 @@ it on the AP or the LAN can change the network. `GET /api/status` is the JSON vi
 An SD card is optional. Without one the board boots and stays up; the CSV,
 session, audio, and accelerometer files are skipped. The AP page and
 `/api/status` report live BME280 readings plus the dust raw ADC, the light raw
-ADC, the PIR motion input on D35, and MPU6050 acceleration. Audio recording still
+ADC, the PIR motion input on D35 (with last-trigger age), and MPU6050 acceleration.
+Audio recording still
 requires an SD card.
 
 ## Hardware

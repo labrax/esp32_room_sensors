@@ -55,19 +55,29 @@ void sensor_data_loop(void * pvParameters) {
 
 void sensor_pir_data_loop(void * pvParameters) {
   static int npir = 0;
+  static bool pir_primed = false;
   while(true) {
     npir = digitalRead(pirPin);
-    status_publish_pir(npir);
-    if(npir != pirValue) {
+    // The first sample only primes the baseline: an HC-SR501 output that is
+    // already high during warm-up is not a trigger.
+    if(!pir_primed) {
+      pir_primed = true;
       pirValue = npir;
-      time_to_file(&data_pir_output);
-      Serial.printf("%d\n", pirValue);
-      if(sd_card == 1) {
-        write_n = data_pir_output.printf("%d\n", pirValue);
-        if(!write_n) {
-          sd_card = 0;
+      status_publish_pir(npir, false);
+    } else {
+      bool pir_triggered = (npir == 1 && pirValue == 0);
+      status_publish_pir(npir, pir_triggered);
+      if(npir != pirValue) {
+        pirValue = npir;
+        time_to_file(&data_pir_output);
+        Serial.printf("%d\n", pirValue);
+        if(sd_card == 1) {
+          write_n = data_pir_output.printf("%d\n", pirValue);
+          if(!write_n) {
+            sd_card = 0;
+          }
+          data_pir_output.flush();
         }
-        data_pir_output.flush();
       }
     }
     //ets_printf("sensor_pir_data_loop() - never used stack size: %u\n", uxTaskGetStackHighWaterMark(NULL));

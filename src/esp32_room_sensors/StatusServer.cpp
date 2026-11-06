@@ -62,7 +62,7 @@ void status_publish_sensors(float temperature_c, float humidity_pct, float press
   xSemaphoreGive(snapshot_lock);
 }
 
-void status_publish_pir(int pir) {
+void status_publish_pir(int pir, bool triggered) {
   if (snapshot_lock == NULL) {
     return;
   }
@@ -72,6 +72,10 @@ void status_publish_pir(int pir) {
   snapshot.pir = pir ? 1 : 0;
   snapshot.pir_valid = true;
   snapshot.pir_updated_ms = millis();
+  if (triggered) {
+    snapshot.pir_trigger_valid = true;
+    snapshot.pir_last_trigger_ms = millis();
+  }
   xSemaphoreGive(snapshot_lock);
 }
 
@@ -213,7 +217,7 @@ static void handle_api_status(void) {
 
   char temp[12], hum[12], pressure[12], utc[32], ssid[200] = "";
   char dust[12], photo[12], pir[8], accel_x[16], accel_y[16], accel_z[16];
-  char pir_age_json[16], accel_age_json[16];
+  char pir_age_json[16], pir_trigger_age_json[16], accel_age_json[16];
   fmt_float(temp, sizeof(temp), s.valid, s.temperature_c, "null");
   fmt_float(hum, sizeof(hum), s.valid, s.humidity_pct, "null");
   fmt_float(pressure, sizeof(pressure), s.valid, s.pressure_hpa, "null");
@@ -239,6 +243,8 @@ static void handle_api_status(void) {
     snprintf(accel_z, sizeof(accel_z), "null");
   }
   fmt_age_json(pir_age_json, sizeof(pir_age_json), s.pir_valid, s.pir_updated_ms);
+  fmt_age_json(pir_trigger_age_json, sizeof(pir_trigger_age_json), s.pir_trigger_valid,
+               s.pir_last_trigger_ms);
   fmt_age_json(accel_age_json, sizeof(accel_age_json), s.accel_valid, s.accel_updated_ms);
   fmt_utc(utc, sizeof(utc), time_valid, now);
 
@@ -256,6 +262,7 @@ static void handle_api_status(void) {
                    "{\"uptime_s\":%lu,\"temperature_c\":%s,\"humidity_pct\":%s,"
                    "\"pressure_hpa\":%s,\"sensors_valid\":%s,\"sensor_age_ms\":%lu,"
                    "\"dust_raw\":%s,\"photo_raw\":%s,\"pir\":%s,\"pir_age_ms\":%s,"
+                   "\"pir_last_trigger_age_ms\":%s,"
                    "\"accel_x_g\":%s,\"accel_y_g\":%s,\"accel_z_g\":%s,"
                    "\"accel_age_ms\":%s,\"accel_present\":%s,"
                    "\"time_source\":\"%s\",\"time_valid\":%s,\"rtc_present\":%s,"
@@ -266,7 +273,7 @@ static void handle_api_status(void) {
                    (unsigned long)(millis() / 1000UL), temp, hum, pressure,
                    s.valid ? "true" : "false",
                    s.valid ? (unsigned long)(millis() - s.updated_ms) : 0UL,
-                   dust, photo, pir, pir_age_json,
+                   dust, photo, pir, pir_age_json, pir_trigger_age_json,
                    accel_x, accel_y, accel_z, accel_age_json,
                    mpu_present ? "true" : "false",
                    time_source_name(), time_valid ? "true" : "false",
@@ -289,7 +296,7 @@ static void handle_root(void) {
   time_t now = time(NULL);
 
   char temp[12], hum[12], pressure[12], age[16], clock[48];
-  char dust[24], photo[24], pir_label[16], pir_age[16], pir_age_row[48];
+  char dust[24], photo[24], pir_label[16], pir_trigger_row[48];
   char motion[256];
   fmt_float(temp, sizeof(temp), s.valid, s.temperature_c, "-");
   fmt_float(hum, sizeof(hum), s.valid, s.humidity_pct, "-");
@@ -304,10 +311,14 @@ static void handle_root(void) {
   } else {
     snprintf(pir_label, sizeof(pir_label), "no reading");
   }
-  pir_age_row[0] = '\0';
-  if (s.pir_valid) {
-    fmt_sample_age(pir_age, sizeof(pir_age), true, s.pir_updated_ms);
-    snprintf(pir_age_row, sizeof(pir_age_row), "<dt>PIR age</dt><dd>%s</dd>", pir_age);
+  if (s.pir_trigger_valid) {
+    char trigger_age[16];
+    fmt_sample_age(trigger_age, sizeof(trigger_age), true, s.pir_last_trigger_ms);
+    snprintf(pir_trigger_row, sizeof(pir_trigger_row),
+             "<dt>Last trigger</dt><dd>%s ago</dd>", trigger_age);
+  } else {
+    snprintf(pir_trigger_row, sizeof(pir_trigger_row),
+             "<dt>Last trigger</dt><dd>none since boot</dd>");
   }
 
   if (!mpu_present) {
@@ -441,7 +452,7 @@ static void handle_root(void) {
       "change the network.</p></section>"
       "<p class=\"foot\"><a href=\"/api/status\">/api/status</a></p>"
       "</main></body></html>\n",
-      temp, hum, pressure, age, dust, photo, pir_label, pir_age_row, motion,
+      temp, hum, pressure, age, dust, photo, pir_label, pir_trigger_row, motion,
       clock, rtc_present ? "present" : "not fitted",
       sd_card == 1 ? "ok" : "unavailable",
       record_streams ? "recording" : "idle", (unsigned long)(millis() / 1000UL),

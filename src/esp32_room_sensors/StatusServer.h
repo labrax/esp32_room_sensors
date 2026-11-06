@@ -18,6 +18,8 @@ struct SensorSnapshot {
   int pir; // 0=no motion, 1=motion
   bool pir_valid;
   uint32_t pir_updated_ms;
+  bool pir_trigger_valid;
+  uint32_t pir_last_trigger_ms; // millis() of the last 0->1 edge
   float accel_x_g;
   float accel_y_g;
   float accel_z_g;
@@ -34,8 +36,9 @@ void status_server_begin(void);
 void status_publish_sensors(float temperature_c, float humidity_pct, float pressure_hpa,
                             int dust_raw, int photo_raw);
 
-// Publishes the latest PIR level (0/1).
-void status_publish_pir(int pir);
+// Publishes the latest PIR level (0/1). Set triggered on a 0->1 edge to stamp
+// the last-trigger time.
+void status_publish_pir(int pir, bool triggered);
 
 // Publishes the latest accelerometer reading in g.
 void status_publish_accel(float x_g, float y_g, float z_g);
