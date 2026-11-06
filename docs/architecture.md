@@ -67,9 +67,9 @@ Keep five tasks. Do not add a storage queue yet.
 
 | Task | Core | Priority | Stack (bytes) | Owns | Period |
 |---|---:|---:|---:|---|---|
-| `audio_loop` | 0 | 3 | 8192 | I2S driver, audio WAV file | continuous while recording |
-| `sensor_loop` | 1 | 2 | 8192 | BME280, photo/dust ADC, main CSV | 300 s |
-| `sensor_pir_loop` | 1 | 2 | 8192 | PIR, PIR CSV | 1 s poll |
+| `audio_loop` | 0 | 3 | 4096 | I2S driver, audio WAV file | continuous while recording |
+| `sensor_loop` | 1 | 2 | 4096 | BME280, photo/dust ADC, main CSV | 300 s |
+| `sensor_pir_loop` | 1 | 2 | 4096 | PIR, PIR CSV | 1 s poll |
 | `input_loop` | 1 | 3 | 4096 | KEY1, LED, session state machine | 10 ms |
 | `sensor_accel_loop` | 1 | 1 | 4096 | MPU6050, accel binary file | 10 Hz |
 | Arduino `loop()` | 1 | 1 | 8192 | health line, SD retry, watchdog feed | 1 s |
@@ -331,17 +331,30 @@ page stays deleted.
 - **Endpoints:** `GET /` (status page plus the WiFi form, manual Refresh link;
   the old 5 s meta refresh is intentionally gone so a half-typed form is not
   wiped) and `GET /api/status` (JSON: `uptime_s`, `temperature_c`,
-  `humidity_pct`, `pressure_hpa`, `sensors_valid`, `sensor_age_ms`,
-  `time_source`, `time_valid`, `rtc_present`, `time_utc`, `sd_ok`, `recording`,
-  `sta_connected`, `sta_ip`, `ap_ip`, `ap_clients`, `sta_ssid`,
-  `sta_provisioned`). `POST /api/wifi` takes form-urlencoded `ssid`/`password`;
+  `humidity_pct`, `pressure_hpa`, `sensors_valid`, `sensor_age_ms`, `dust_raw`,
+  `photo_raw`, `pir`, `pir_age_ms`, `accel_x_g`, `accel_y_g`, `accel_z_g`,
+  `accel_age_ms`, `accel_present`, `time_source`, `time_valid`, `rtc_present`,
+  `time_utc`, `sd_ok`, `recording`, `sta_connected`, `sta_ip`, `ap_ip`,
+  `ap_clients`, `sta_ssid`, `sta_provisioned`). `POST /api/wifi` takes
+  form-urlencoded `ssid`/`password`;
   400 on invalid input with no NVS write, 200 then a restart on success. Unknown
   paths return 404. No auth, no captive portal, no file listing.
 - **Ownership:** the sensor task publishes a `SensorSnapshot` under a mutex
   after each BME280 read; the handlers copy it and never touch I2C. A dedicated
   `status_server` task (core 1, priority 1, 8192 B) polls
   `server.handleClient()` every 10 ms, so a slow HTTP client cannot stall the
-  loggers. The `loop()` delay and the SD restart path are unchanged.
+  loggers. The `loop()` delay is unchanged; the old no-SD restart path was
+  removed in the 2026-11-05 extension.
+- **No-SD mode:** `SD.begin()` failure or a missing card leaves `sd_card=0`; the
+  board boots and stays up. CSV, session JSON, audio, and accel files are
+  skipped; the old `loop()` no-SD restart was removed in the 2026-11-05
+  extension. The AP page and `/api/status` carry BME280, dust/light raw ADC, PIR
+  input level, and accel g. Dust/light refresh on the 300 s sensor period; PIR
+  about 1 s; accel about 1 Hz when not recording. While SD recording is running,
+  `loop_accel` owns the MPU and the network accel fields may be stale. Audio
+  remains SD-only. The ~1 Hz MPU reads share `Wire` with the BME280 and there is
+  no HS-5 I2C mutex on this branch, so rare contention is still possible. HS-8
+  still owns the wider SD/session/error-handling rework.
 - **Boot order:** `wifi_config_begin()` runs before the AP/server; the AP still
   starts in `setup()` before `init_time()`, so an AP-only boot still has an AP
   while the bounded STA/NTP attempt runs. Saved or fallback STA credentials
@@ -366,8 +379,10 @@ page stays deleted.
   provisioning form, because HS-4 turns WiFi off after the sync; a later
   boot-window policy must keep the radio up while the window is open. Until
   then, absolute temperature is indicative while the AP is on.
-- **Open:** HS-6 owns recording state; HS-8 owns the SD/`loop()` rework. This
-  module only reads `sd_card`, `record_streams`, and the HS-4 time globals.
+- **Open:** HS-6 owns recording state; HS-8 owns the wider
+  SD/session/error-handling rework. The no-SD boot path is implemented in this
+  module. This module only reads `sd_card`, `record_streams`, and the HS-4 time
+  globals.
 
 ---
 
@@ -706,6 +721,9 @@ Per-ticket gates are in the child tickets. The shared bench matrix:
 | Wrong STA credentials | AP stays up, page reachable, `time_source=compile` or `rtc`, no WDT |
 | RTC-valid boot, saved pair | `time_source=rtc`, no forced STA association, the form still shows the saved target |
 | AP thermal | 1 h AP on vs off; BME280 bias documented; > 0.5 °C opens a follow-up |
+| No SD boot | Boots within 30 s; AP stays up; `sd_ok:false`, `recording:false`; `/` and `/api/status` report BME + dust/light/PIR/accel; no reboot loop |
+| No SD live fields | `dust_raw`/`photo_raw` numeric after the first sensor sample; `pir` 0/1 ~1 s; accel ~1 Hz; `null` before the first sample, including `pir_age_ms`/`accel_age_ms` |
+| SD present | CSV/audio/accel/session paths still work; `sd_ok:true` |
 | 2 h audio + accel + CSV | No truncated CSV, no interleaved audio, no `sd_ok` flapping |
 | 10 min WAV | Playable 16 kHz mono; duration within 1 % |
 | Power cut during recording | WAV recoverable; no corrupt CSV header |

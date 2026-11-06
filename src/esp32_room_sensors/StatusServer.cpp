@@ -12,6 +12,7 @@
 #include "SDData.h"
 #include "TimeFunctions.h"
 #include "WifiConfig.h"
+#include "accel.h"
 #include "defines.h"
 #include "wifi_pass.h"
 
@@ -26,11 +27,11 @@ static const IPAddress AP_MASK(255, 255, 255, 0);
 
 static WebServer status_server(80);
 static SemaphoreHandle_t snapshot_lock = NULL;
-static SensorSnapshot snapshot = {0.0f, 0.0f, 0.0f, false, 0};
+static SensorSnapshot snapshot = {};
 static TaskHandle_t StatusServerTask = NULL;
 
 static SensorSnapshot snapshot_copy(void) {
-  SensorSnapshot out = {0.0f, 0.0f, 0.0f, false, 0};
+  SensorSnapshot out = {};
   if (snapshot_lock == NULL) {
     return out;
   }
@@ -42,7 +43,8 @@ static SensorSnapshot snapshot_copy(void) {
   return out;
 }
 
-void status_publish_sensors(float temperature_c, float humidity_pct, float pressure_hpa) {
+void status_publish_sensors(float temperature_c, float humidity_pct, float pressure_hpa,
+                            int dust_raw, int photo_raw) {
   if (snapshot_lock == NULL) {
     return;
   }
@@ -54,6 +56,37 @@ void status_publish_sensors(float temperature_c, float humidity_pct, float press
   snapshot.pressure_hpa = pressure_hpa;
   snapshot.valid = !(isnan(temperature_c) || isnan(humidity_pct) || isnan(pressure_hpa));
   snapshot.updated_ms = millis();
+  snapshot.dust_raw = dust_raw;
+  snapshot.photo_raw = photo_raw;
+  snapshot.air_valid = true;
+  xSemaphoreGive(snapshot_lock);
+}
+
+void status_publish_pir(int pir) {
+  if (snapshot_lock == NULL) {
+    return;
+  }
+  if (xSemaphoreTake(snapshot_lock, pdMS_TO_TICKS(5)) != pdTRUE) {
+    return;
+  }
+  snapshot.pir = pir ? 1 : 0;
+  snapshot.pir_valid = true;
+  snapshot.pir_updated_ms = millis();
+  xSemaphoreGive(snapshot_lock);
+}
+
+void status_publish_accel(float x_g, float y_g, float z_g) {
+  if (snapshot_lock == NULL) {
+    return;
+  }
+  if (xSemaphoreTake(snapshot_lock, pdMS_TO_TICKS(5)) != pdTRUE) {
+    return;
+  }
+  snapshot.accel_x_g = x_g;
+  snapshot.accel_y_g = y_g;
+  snapshot.accel_z_g = z_g;
+  snapshot.accel_valid = true;
+  snapshot.accel_updated_ms = millis();
   xSemaphoreGive(snapshot_lock);
 }
 
@@ -63,6 +96,36 @@ static void fmt_float(char *dst, size_t len, bool valid, float value, const char
   } else {
     snprintf(dst, len, "%s", missing);
   }
+}
+
+// Dust and light are reported as the sensor's raw ADC count, never as a
+// calibrated unit, so the label says so.
+static void fmt_raw(char *dst, size_t len, bool valid, int raw) {
+  if (valid) {
+    snprintf(dst, len, "%d raw ADC", raw);
+  } else {
+    snprintf(dst, len, "no reading");
+  }
+}
+
+// Age of a published sample, in whole seconds. Unsigned subtraction stays
+// correct across the millis() wrap.
+static void fmt_sample_age(char *dst, size_t len, bool valid, uint32_t updated_ms) {
+  if (valid) {
+    snprintf(dst, len, "%lu s", (unsigned long)((millis() - updated_ms) / 1000UL));
+  } else {
+    snprintf(dst, len, "-");
+  }
+}
+
+// Age of a published sample in milliseconds, as a JSON number, or null when
+// the sensor has not produced a sample yet.
+static void fmt_age_json(char *dst, size_t len, bool valid, uint32_t updated_ms) {
+  if (!valid) {
+    snprintf(dst, len, "null");
+    return;
+  }
+  snprintf(dst, len, "%lu", (unsigned long)((millis() - updated_ms)));
 }
 
 static void fmt_utc(char *dst, size_t len, bool valid, time_t now) {
@@ -149,9 +212,34 @@ static void handle_api_status(void) {
   time_t now = time(NULL);
 
   char temp[12], hum[12], pressure[12], utc[32], ssid[200] = "";
+  char dust[12], photo[12], pir[8], accel_x[16], accel_y[16], accel_z[16];
+  char pir_age_json[16], accel_age_json[16];
   fmt_float(temp, sizeof(temp), s.valid, s.temperature_c, "null");
   fmt_float(hum, sizeof(hum), s.valid, s.humidity_pct, "null");
   fmt_float(pressure, sizeof(pressure), s.valid, s.pressure_hpa, "null");
+  if (s.air_valid) {
+    snprintf(dust, sizeof(dust), "%d", s.dust_raw);
+    snprintf(photo, sizeof(photo), "%d", s.photo_raw);
+  } else {
+    snprintf(dust, sizeof(dust), "null");
+    snprintf(photo, sizeof(photo), "null");
+  }
+  if (s.pir_valid) {
+    snprintf(pir, sizeof(pir), "%d", s.pir ? 1 : 0);
+  } else {
+    snprintf(pir, sizeof(pir), "null");
+  }
+  if (s.accel_valid) {
+    snprintf(accel_x, sizeof(accel_x), "%.3f", s.accel_x_g);
+    snprintf(accel_y, sizeof(accel_y), "%.3f", s.accel_y_g);
+    snprintf(accel_z, sizeof(accel_z), "%.3f", s.accel_z_g);
+  } else {
+    snprintf(accel_x, sizeof(accel_x), "null");
+    snprintf(accel_y, sizeof(accel_y), "null");
+    snprintf(accel_z, sizeof(accel_z), "null");
+  }
+  fmt_age_json(pir_age_json, sizeof(pir_age_json), s.pir_valid, s.pir_updated_ms);
+  fmt_age_json(accel_age_json, sizeof(accel_age_json), s.accel_valid, s.accel_updated_ms);
   fmt_utc(utc, sizeof(utc), time_valid, now);
 
   status_server.sendHeader("Cache-Control", "no-store");
@@ -163,10 +251,13 @@ static void handle_api_status(void) {
     return;
   }
 
-  static char body[800]; // single status task; keeps the buffer off its stack
+  static char body[1280]; // single status task; keeps the buffer off its stack
   int n = snprintf(body, sizeof(body),
                    "{\"uptime_s\":%lu,\"temperature_c\":%s,\"humidity_pct\":%s,"
                    "\"pressure_hpa\":%s,\"sensors_valid\":%s,\"sensor_age_ms\":%lu,"
+                   "\"dust_raw\":%s,\"photo_raw\":%s,\"pir\":%s,\"pir_age_ms\":%s,"
+                   "\"accel_x_g\":%s,\"accel_y_g\":%s,\"accel_z_g\":%s,"
+                   "\"accel_age_ms\":%s,\"accel_present\":%s,"
                    "\"time_source\":\"%s\",\"time_valid\":%s,\"rtc_present\":%s,"
                    "\"time_utc\":%s,"
                    "\"sd_ok\":%s,\"recording\":%s,\"sta_connected\":%s,"
@@ -175,6 +266,9 @@ static void handle_api_status(void) {
                    (unsigned long)(millis() / 1000UL), temp, hum, pressure,
                    s.valid ? "true" : "false",
                    s.valid ? (unsigned long)(millis() - s.updated_ms) : 0UL,
+                   dust, photo, pir, pir_age_json,
+                   accel_x, accel_y, accel_z, accel_age_json,
+                   mpu_present ? "true" : "false",
                    time_source_name(), time_valid ? "true" : "false",
                    rtc_present ? "true" : "false", utc,
                    sd_card == 1 ? "true" : "false", record_streams ? "true" : "false",
@@ -195,14 +289,45 @@ static void handle_root(void) {
   time_t now = time(NULL);
 
   char temp[12], hum[12], pressure[12], age[16], clock[48];
+  char dust[24], photo[24], pir_label[16], pir_age[16], pir_age_row[48];
+  char motion[256];
   fmt_float(temp, sizeof(temp), s.valid, s.temperature_c, "-");
   fmt_float(hum, sizeof(hum), s.valid, s.humidity_pct, "-");
   fmt_float(pressure, sizeof(pressure), s.valid, s.pressure_hpa, "-");
-  if (s.valid) {
-    snprintf(age, sizeof(age), "%lu s", (unsigned long)((millis() - s.updated_ms) / 1000UL));
+  fmt_sample_age(age, sizeof(age), s.valid, s.updated_ms);
+
+  fmt_raw(dust, sizeof(dust), s.air_valid, s.dust_raw);
+  fmt_raw(photo, sizeof(photo), s.air_valid, s.photo_raw);
+  if (s.pir_valid) {
+    // Pin level only: this board has no PIR sensor fitted, so do not claim one.
+    snprintf(pir_label, sizeof(pir_label), "%d (%s)", s.pir ? 1 : 0,
+             s.pir ? "high" : "low");
   } else {
-    snprintf(age, sizeof(age), "-");
+    snprintf(pir_label, sizeof(pir_label), "no reading");
   }
+  pir_age_row[0] = '\0';
+  if (s.pir_valid) {
+    fmt_sample_age(pir_age, sizeof(pir_age), true, s.pir_updated_ms);
+    snprintf(pir_age_row, sizeof(pir_age_row), "<dt>PIR age</dt><dd>%s</dd>", pir_age);
+  }
+
+  if (!mpu_present) {
+    snprintf(motion, sizeof(motion), "<dt>Accelerometer</dt><dd>not fitted</dd>");
+  } else if (!s.accel_valid) {
+    snprintf(motion, sizeof(motion),
+             "<dt>Accelerometer</dt><dd>waiting for sample</dd>");
+  } else {
+    char ax[16], ay[16], az[16], accel_age[16];
+    snprintf(ax, sizeof(ax), "%.3f", s.accel_x_g);
+    snprintf(ay, sizeof(ay), "%.3f", s.accel_y_g);
+    snprintf(az, sizeof(az), "%.3f", s.accel_z_g);
+    fmt_sample_age(accel_age, sizeof(accel_age), true, s.accel_updated_ms);
+    snprintf(motion, sizeof(motion),
+             "<dt>X</dt><dd>%s g</dd><dt>Y</dt><dd>%s g</dd>"
+             "<dt>Z</dt><dd>%s g</dd><dt>Sample age</dt><dd>%s</dd>",
+             ax, ay, az, accel_age);
+  }
+
   if (time_valid) {
     struct tm t;
     gmtime_r(&now, &t);
@@ -284,12 +409,19 @@ static void handle_root(void) {
       "<dt>Humidity</dt><dd>%s %%</dd>"
       "<dt>Pressure</dt><dd>%s hPa</dd>"
       "<dt>Reading age</dt><dd>%s</dd></dl></section>"
+      "<section><h2>Air &amp; light</h2><dl>"
+      "<dt>Dust</dt><dd>%s</dd>"
+      "<dt>Light</dt><dd>%s</dd>"
+      "<dt>PIR input</dt><dd>%s</dd>%s</dl></section>"
+      "<section><h2>Motion</h2><dl>%s</dl></section>"
       "<section><h2>Device</h2><dl>"
       "<dt>Time</dt><dd>%s</dd>"
       "<dt>RTC</dt><dd>%s</dd>"
       "<dt>SD card</dt><dd>%s</dd>"
       "<dt>Recording</dt><dd>%s</dd>"
-      "<dt>Uptime</dt><dd>%lu s</dd></dl></section>"
+      "<dt>Uptime</dt><dd>%lu s</dd></dl>"
+      "<p class=\"note\">SD logging is optional: without a card the board stays up "
+      "and reports live values over the network.</p></section>"
       "<section><h2>WiFi network</h2><dl>"
       "<dt>Target</dt><dd>%s</dd>"
       "<dt>Source</dt><dd>%s</dd>"
@@ -310,7 +442,8 @@ static void handle_root(void) {
       "change the network.</p></section>"
       "<p class=\"foot\"><a href=\"/api/status\">/api/status</a></p>"
       "</main></body></html>\n",
-      temp, hum, pressure, age, clock, rtc_present ? "present" : "not fitted",
+      temp, hum, pressure, age, dust, photo, pir_label, pir_age_row, motion,
+      clock, rtc_present ? "present" : "not fitted",
       sd_card == 1 ? "ok" : "unavailable",
       record_streams ? "recording" : "idle", (unsigned long)(millis() / 1000UL),
       target, source, conn, ssid_value);

@@ -29,3 +29,16 @@ void loop_accel() {
   }
   close_accel_file();
 }
+
+// One-shot read for the status page when nothing is being recorded. Not
+// reentrant: Execute() must not run from two tasks at once.
+bool read_accel_g(float *x_g, float *y_g, float *z_g) {
+  if (!mpu_present) {
+    return false;
+  }
+  mpu.Execute();
+  *x_g = mpu.GetAccX();
+  *y_g = mpu.GetAccY();
+  *z_g = mpu.GetAccZ();
+  return true;
+}

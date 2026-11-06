@@ -19,4 +19,8 @@ struct accel_data {
 void tick_accel();
 void loop_accel();
 
+// Reads one sample and returns the acceleration in g. False when no MPU6050 is
+// fitted. Call from a single task only: Execute() shares the I2C bus.
+bool read_accel_g(float *x_g, float *y_g, float *z_g);
+
 #endif

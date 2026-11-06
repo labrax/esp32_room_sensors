@@ -33,6 +33,7 @@ void start_sd() {
     Serial.print("\nCard Type: ");
     if(cardType == CARD_NONE){
         Serial.println("No card attached");
+        sd_card = 0;
         return;
     }
     if(cardType == CARD_MMC){
@@ -101,6 +102,9 @@ void start_sd() {
 }
 
 void start_audio_file() {
+  if (sd_card != 1) {
+    return;
+  }
   char audio_wav_data_file[48];
   build_unique_filename(audio_wav_data_file, sizeof(audio_wav_data_file), "_audio.raw");
   data_audio_raw_output = SD.open(audio_wav_data_file, FILE_WRITE);
@@ -110,6 +114,9 @@ void start_audio_file() {
 }
 
 void start_accel_file() {
+  if (sd_card != 1) {
+    return;
+  }
   char accel_data_file[48];
   build_unique_filename(accel_data_file, sizeof(accel_data_file), "_accel.bin");
   data_accel_output = SD.open(accel_data_file, FILE_WRITE);

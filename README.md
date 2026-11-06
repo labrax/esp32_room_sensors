@@ -4,8 +4,9 @@ Firmware and hardware for a WiFi-connected ESP32 room-sensor node.
 
 Sensors: BME280 (temperature, humidity, pressure), photoresistor, dust sensor,
 PIR, MPU-6050 accelerometer, and INMP441 I2S microphone. Data is logged to an
-SD card; a DS3231 RTC provides timestamps; a local access-point status page and
-JSON API expose the readings.
+SD card when one is fitted; a DS3231 RTC provides timestamps; a local
+access-point status page and JSON API expose live readings, including on a
+board without a card.
 
 ## Repository layout
 
@@ -39,6 +40,12 @@ the `WIFI_SSID`/`WIFI_PASSWORD` fallback on the next boot; the device restarts
 after saving and the AP stays up. The page has no login, so anyone who can reach
 it on the AP or the LAN can change the network. `GET /api/status` is the JSON view;
 `POST /api/wifi` is the form endpoint.
+
+An SD card is optional. Without one the board boots and stays up; the CSV,
+session, audio, and accelerometer files are skipped. The AP page and
+`/api/status` report live BME280 readings plus the dust raw ADC, the light raw
+ADC, the PIR input level, and MPU6050 acceleration. Audio recording still
+requires an SD card.
 
 ## Hardware
 

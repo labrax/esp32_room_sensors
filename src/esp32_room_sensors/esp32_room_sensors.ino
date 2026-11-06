@@ -26,7 +26,6 @@ void sensor_data_loop(void * pvParameters) {
     temperature = bme.readTemperature();
     humidity = bme.readHumidity();
     pressure = bme.readPressure() / 100.0F;
-    status_publish_sensors(temperature, humidity, pressure);
 
     delay(1000);
     //dust
@@ -36,7 +35,9 @@ void sensor_data_loop(void * pvParameters) {
     delayMicroseconds(40);
     digitalWrite(dustLEDPin, LOW); // turn the LED off
     delayMicroseconds(9680);
-  
+
+    status_publish_sensors(temperature, humidity, pressure, dustValue, photoValue);
+
     // output data
     time_to_file(&data_output);
     Serial.printf("%d,%d,%f,%f,%f\n", dustValue, photoValue, temperature, humidity, pressure);
@@ -56,6 +57,7 @@ void sensor_pir_data_loop(void * pvParameters) {
   static int npir = 0;
   while(true) {
     npir = digitalRead(pirPin);
+    status_publish_pir(npir);
     if(npir != pirValue) {
       pirValue = npir;
       time_to_file(&data_pir_output);
@@ -84,7 +86,7 @@ void input_loop(void * pvParameters) {
       vTaskDelay(250 / portTICK_PERIOD_MS);
       digitalWrite(statusLED, LOW); // power on the LED
       vTaskDelay(250 / portTICK_PERIOD_MS);
-      if(digitalRead(STREAMS_ENABLE_DISABLE_PIN) == HIGH) {
+      if(sd_card == 1 && digitalRead(STREAMS_ENABLE_DISABLE_PIN) == HIGH) {
         start_audio_file();
         start_accel_file();
         
@@ -104,13 +106,15 @@ void input_loop(void * pvParameters) {
 
 void sensor_accel_loop(void * pvParameters) {
   while(true) {
-    if(sd_card == 0) {
-      Serial.println("<accel> No SD card setup!");
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
-    } else if(record_streams == 1) {
+    if(record_streams == 1 && sd_card == 1) {
       loop_accel(); // internally record_streams is also checked
     } else {
-      vTaskDelay(10 / portTICK_PERIOD_MS);
+      // No card or idle: publish a ~1 Hz sample instead of opening files.
+      float x_g, y_g, z_g;
+      if(read_accel_g(&x_g, &y_g, &z_g)) {
+        status_publish_accel(x_g, y_g, z_g);
+      }
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
   }
 }
@@ -120,8 +124,8 @@ void audio_loop(void * pvParameters) {
   Serial.println(xPortGetCoreID());
   while(true) {
     if(sd_card == 0) {
-      Serial.println("<mic> No SD card setup!");
       vTaskDelay(1000 / portTICK_PERIOD_MS);
+      continue;
     } else if(record_streams == 1) {
       collect_audio_data(); // internally record_streams is also checked
     }
@@ -231,7 +235,7 @@ void setup() {
   xTaskCreatePinnedToCore(
         sensor_pir_data_loop, /* Function to implement the task */
         "sensor_pir_loop", /* Name of the task */
-        1500,  /* Stack size in bytes */
+        4096,  /* bytes; printf/time_to_file headroom */
         NULL,  /* Task input parameter */
         0,  /* Priority of the task */ 
         &DataPIRTask,  /* Task handle. */
@@ -263,12 +267,4 @@ void loop()
 {
   delay(10000);
   service_time();
-
-  if(sd_card == 0) {
-    Serial.println("Invalid card status, restarting");
-    digitalWrite(statusLED, HIGH); // power on the LED
-    delay(10000);
-    Serial.println("Invalid card status, restarting");
-    ESP.restart();
-  }
 }
