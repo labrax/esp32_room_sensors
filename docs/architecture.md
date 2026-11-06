@@ -48,8 +48,8 @@ against the source; corrections are called out.
 | High | SD/I2C races | **Confirmed** | Audio (core 0) writes `data_audio_raw_output` (`Mic.cpp:89`), while core 1 writes `data_output` (`.ino:42`), `data_pir_output` (`.ino:62`), and `data_accel_output` (`accel.cpp:20`). `sd_card` and `write_n` are plain globals (`SDData.cpp:3,10`); `record_streams` is a plain `unsigned char` (`defines.cpp:3`); `a0/a1/current_tm` are shared (`TimeFunctions.cpp:10-11,91-99`). `bme` and `mpu` share `Wire` with no lock (`.ino:187-188`, `sensors.cpp`, `accel.cpp`). |
 | High | Stream switch | **Confirmed** | `.ino:74-102`: while idle, the loop blinks for 1 s, then a HIGH starts; while recording, the same HIGH stops. Holding the input HIGH toggles about once per second. Presses during the 2 s blink are not sampled. There is no debounce. The pin is configured as plain `INPUT` (`.ino:192`), so an open switch floats. |
 | High | `WEBSERVER` | **Confirmed** | `ServerFunctions.cpp:10` uses undeclared `altitude`; `:10` uses undefined `SEALEVELPRESSURE_HPA`; `:18` defines `SendHTML` after its use at `:11`; `ServerFunctions.h` declares neither handler. `.ino:196-197` references the handlers. `.ino:258-260` calls `server.handleClient()` once per 10 s. The `.ino` includes `ServerFunctions.h` before `defines.h`, so uncommenting `WEBSERVER` in `defines.h` does not define it for the header. |
-| Med | Stacks | **Confirmed, comment corrected** | ESP-IDF `xTaskCreate*` takes the stack depth in **bytes**, not words (the `.ino` comments at `:209,218,227,236,245` say "words"). The sensor task gets 1900 B while calling `Serial.printf("%f")` and `File.printf("%f")`; the PIR task gets 1500 B while calling `printf`. The high-water probes are commented out (`.ino:48,69`). `uxTaskGetStackHighWaterMark` also reports bytes in ESP-IDF. |
-| Med | Error handling | **Confirmed** | `bme.begin(0x76)` and `mpu.Initialize()` are unchecked (`.ino:187-188`). A mount failure only prints (`SDData.cpp:14-16`). File-open failures set `sd_card=0` for the CSV files but not for audio/accel (`SDData.cpp:90-106`). `i2s_read` uses `portMAX_DELAY` (`Mic.cpp:85`); the audio write result is ignored (`Mic.cpp:89`); accel flushes every sample (`accel.cpp:20-21`). `loop()` restarts the board every 10 s whenever `sd_card == 0` (`.ino:262-268`), producing a reboot loop. |
+| Med | Stacks | **Confirmed, comment corrected** | ESP-IDF `xTaskCreate*` takes the stack depth in **bytes**, not words (the `.ino` comments at `:209,218,227,236,245` say "words"). The sensor task gets 1900 B while calling `Serial.printf("%f")` and `File.printf("%f")`; the PIR task gets 1500 B while calling `printf`. The high-water probes are commented out (`.ino:48,69`). `uxTaskGetStackHighWaterMark` also reports bytes in ESP-IDF. HS-12 raised the sensor/PIR stacks to 4096 B. |
+| Med | Error handling | **Confirmed** | `bme.begin(0x76)` and `mpu.Initialize()` are unchecked (`.ino:187-188`). A mount failure only prints (`SDData.cpp:14-16`). File-open failures set `sd_card=0` for the CSV files but not for audio/accel (`SDData.cpp:90-106`). `i2s_read` uses `portMAX_DELAY` (`Mic.cpp:85`); the audio write result is ignored (`Mic.cpp:89`); accel flushes every sample (`accel.cpp:20-21`). `loop()` restarts the board every 10 s whenever `sd_card == 0` (`.ino:262-268`), producing a reboot loop. HS-12 removed that restart and guarded the file opens. |
 | Med | RTC logic | **Confirmed** | `updateTimeFromRTC` calls `mktime` on an uninitialized `struct tm`; `tm_isdst` is never set (`TimeFunctions.cpp:36-44`). The validity test accepts only 2021 (`:70`). `getLocalTime` returns are ignored in the double buffer (`:91-99`). A valid RTC with any other year falls into the unbounded WiFi/NTP path. |
 | Med | Build repro | **Confirmed** | `sensors.h:6` includes the legacy `<driver/adc.h>`; `defines.h:23` includes `<driver/i2s.h>`; `.ino:176` calls `btStop()`. All require ESP32 core 2.0.x. `Mic.h:6` includes `arduinoFFT.h` while the FFT code is commented out (`Mic.cpp:99-119`). There is no `sketch.yaml`/`platformio.ini` and no CI. `TinyMPU6050` is in the Arduino library index at 0.5.3, so it can be pinned in `sketch.yaml`. |
 | Low | Case docs (`part=`) | **Confirmed** | `esp32_case.scad:6` lists only `base, lid, lid_pir, plunger, assembly, assembly_pir`, but the output block at `:389-419` also supports `base_501, lid_501, pir501_cover, assembly_501, none`. `case/README.md` never names `part=`; `:74-75` only mentions `front_ext`. |
@@ -67,24 +67,25 @@ Keep five tasks. Do not add a storage queue yet.
 
 | Task | Core | Priority | Stack (bytes) | Owns | Period |
 |---|---:|---:|---:|---|---|
-| `audio_loop` | 0 | 3 | 4096 | I2S driver, audio WAV file | continuous while recording |
-| `sensor_loop` | 1 | 2 | 4096 | BME280, photo/dust ADC, main CSV | 300 s |
-| `sensor_pir_loop` | 1 | 2 | 4096 | PIR, PIR CSV | 1 s poll |
-| `input_loop` | 1 | 3 | 4096 | KEY1, LED, session state machine | 10 ms |
-| `sensor_accel_loop` | 1 | 1 | 4096 | MPU6050, accel binary file | 10 Hz |
-| Arduino `loop()` | 1 | 1 | 8192 | health line, SD retry, watchdog feed | 1 s |
+| `audio_loop` | 0 | 1 | 4096 | I2S driver, audio WAV file | continuous while recording |
+| `sensor_loop` | 1 | 0 | 4096 | BME280, photo/dust ADC, main CSV | 300 s |
+| `sensor_pir_loop` | 1 | 0 | 4096 | PIR, PIR CSV | 1 s poll |
+| `input_loop` | 1 | 0 | 4096 | KEY1, LED, session state machine | 10 ms |
+| `sensor_accel_loop` | 1 | 0 | 4096 | MPU6050, accel binary file | 10 Hz |
+| Arduino `loop()` | 1 | 1 | 8192 | time service / idle | 10 s |
 
 Rationale:
 
-- Audio must preempt on core 0 to drain the I2S DMA. Priority 3 is enough; with
-  the HS-12 AP the WiFi task stays up, but it is light and the radio work is
-  mostly on the WiFi core.
-- Input gets priority 3 so a 30 ms debounce is not starved by sensor work.
+- Audio runs at priority 1 on core 0 to drain the I2S DMA; with the HS-12 AP
+  the WiFi task stays up, but it is light and the radio work is mostly on the
+  WiFi core.
+- Input runs at priority 0 with the sensor tasks; the 10 ms loop still satisfies
+  the 30 ms debounce.
 - Sensor and PIR stay separate: a BME/dust sample takes about 2 s, and merging
   PIR into it would delay a 1 s poll.
-- Stacks are in bytes. 8192 B is the starting point for any task that calls
-  `printf` or `File.printf`; measure with `uxTaskGetStackHighWaterMark` and keep
-  at least 25 % free. The current 1900 B/1500 B values are unsafe.
+- Stacks are in bytes. The sketch uses 4096 B for the five worker tasks; measure
+  with `uxTaskGetStackHighWaterMark` and keep at least 25 % free. The earlier
+  1900 B/1500 B values were unsafe.
 
 ### 3.2 Ownership and locking
 

@@ -30,13 +30,13 @@ READY = b"HSA_READY"
 
 
 class Reader:
-    def __init__(self, ser, chunk=4096):
-        self.ser = ser
+    def __init__(self, port, chunk=4096):
+        self.port = port
         self.chunk = chunk
         self.buf = b""
 
     def _fill(self):
-        data = self.ser.read(self.chunk)
+        data = self.port.read(self.chunk)
         if data:
             self.buf += data
         return bool(data)
@@ -103,11 +103,11 @@ def main():
     args = ap.parse_args()
 
     try:
-        ser = serial.Serial(args.port, args.baud, timeout=0.5)
+        port = serial.Serial(args.port, args.baud, timeout=0.5)
     except serial.SerialException as exc:
         sys.exit(f"cannot open {args.port}: {exc}")
 
-    reader = Reader(ser)
+    reader = Reader(port)
     print(f"Opened {args.port} at {args.baud} baud")
     print("Waiting for HSA_READY...")
     if not reader.wait_for(READY, args.ready_timeout):
@@ -115,8 +115,8 @@ def main():
 
     for index in range(args.count):
         print(f"\n[{index + 1}/{args.count}] Sending start...")
-        ser.write(args.start_char.encode("ascii"))
-        ser.flush()
+        port.write(args.start_char.encode("ascii"))
+        port.flush()
 
         if not reader.wait_for(MAGIC, args.timeout):
             sys.exit("no HSA1 header received")
@@ -152,7 +152,7 @@ def main():
             if not reader.wait_for(READY, args.ready_timeout):
                 print("No HSA_READY seen; sending next start anyway")
 
-    ser.close()
+    port.close()
 
 
 if __name__ == "__main__":
