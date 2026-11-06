@@ -349,7 +349,7 @@ page stays deleted.
   board boots and stays up. CSV, session JSON, audio, and accel files are
   skipped; the old `loop()` no-SD restart was removed in the 2026-11-05
   extension. The AP page and `/api/status` carry BME280, dust/light raw ADC, PIR
-  input level, and accel g. Dust/light refresh on the 300 s sensor period; PIR
+  motion on D35, and accel g. Dust/light refresh on the 300 s sensor period; PIR
   about 1 s; accel about 1 Hz when not recording. While SD recording is running,
   `loop_accel` owns the MPU and the network accel fields may be stale. Audio
   remains SD-only. The ~1 Hz MPU reads share `Wire` with the BME280 and there is

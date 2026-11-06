@@ -299,9 +299,8 @@ static void handle_root(void) {
   fmt_raw(dust, sizeof(dust), s.air_valid, s.dust_raw);
   fmt_raw(photo, sizeof(photo), s.air_valid, s.photo_raw);
   if (s.pir_valid) {
-    // Pin level only: this board has no PIR sensor fitted, so do not claim one.
-    snprintf(pir_label, sizeof(pir_label), "%d (%s)", s.pir ? 1 : 0,
-             s.pir ? "high" : "low");
+    // The PIR output is on D35; present the digital level as motion state.
+    snprintf(pir_label, sizeof(pir_label), "%s", s.pir ? "motion" : "clear");
   } else {
     snprintf(pir_label, sizeof(pir_label), "no reading");
   }
@@ -412,7 +411,7 @@ static void handle_root(void) {
       "<section><h2>Air &amp; light</h2><dl>"
       "<dt>Dust</dt><dd>%s</dd>"
       "<dt>Light</dt><dd>%s</dd>"
-      "<dt>PIR input</dt><dd>%s</dd>%s</dl></section>"
+      "<dt>Motion (D35)</dt><dd>%s</dd>%s</dl></section>"
       "<section><h2>Motion</h2><dl>%s</dl></section>"
       "<section><h2>Device</h2><dl>"
       "<dt>Time</dt><dd>%s</dd>"
